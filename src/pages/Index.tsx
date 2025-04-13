@@ -1,4 +1,3 @@
-
 import { useIsMobile } from "@/hooks/use-mobile";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -125,7 +124,6 @@ const featuredArtisans = [
   }
 ];
 
-// Upload hackathon image and use it
 const hackathonImage = "public/lovable-uploads/c295a133-d4ce-4a33-b206-b7981833c619.png";
 
 const Index = () => {
@@ -189,8 +187,8 @@ const Index = () => {
                 <div className="md:w-1/2">
                   <div className="rounded-lg overflow-hidden shadow-md">
                     <img 
-                      src={hackathonImage} 
-                      alt="HackHazards 2024 - Transform Rural Commerce" 
+                      src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&auto=format&fit=crop" 
+                      alt="Rural artisan at work" 
                       className="w-full h-auto" 
                     />
                   </div>

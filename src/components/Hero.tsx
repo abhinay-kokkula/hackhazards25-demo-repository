@@ -1,7 +1,10 @@
 
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
+  const navigate = useNavigate();
+  
   return (
     <div className="relative bg-gradient-to-r from-amber-50 to-orange-50">
       <div className="absolute inset-0 rural-pattern-bg opacity-30"></div>
@@ -18,7 +21,11 @@ const Hero = () => {
             <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg">
               Shop Now
             </Button>
-            <Button variant="outline" className="border-primary text-primary hover:bg-primary/10 px-8 py-6 text-lg">
+            <Button 
+              variant="outline" 
+              className="border-primary text-primary hover:bg-primary/10 px-8 py-6 text-lg"
+              onClick={() => navigate('/seller')}
+            >
               Become a Seller
             </Button>
           </div>
