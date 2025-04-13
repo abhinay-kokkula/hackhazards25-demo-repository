@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,6 +27,17 @@ const SellerDashboard = () => {
   const navigate = useNavigate();
   const [images, setImages] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  
+  useEffect(() => {
+    // Get the current user ID on component mount
+    const fetchUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    
+    fetchUserId();
+  }, []);
   
   const form = useForm<ProductFormValues>({
     defaultValues: {
@@ -81,6 +92,17 @@ const SellerDashboard = () => {
     setIsSubmitting(true);
 
     try {
+      // Check if user is logged in
+      if (!userId) {
+        toast({
+          title: "Authentication Error",
+          description: "You need to be logged in to add products.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       // Upload images first
       const imageUrls = await uploadImages();
       if (imageUrls === null) {
@@ -98,7 +120,7 @@ const SellerDashboard = () => {
           category: data.category,
           location: data.location,
           is_organic: data.isOrganic,
-          seller_id: supabase.auth.getUser().data.user?.id,
+          seller_id: userId,
           images: imageUrls
         })
         .select();
