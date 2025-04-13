@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ type ProductFormValues = {
 const SellerDashboard = () => {
   const navigate = useNavigate();
   const [images, setImages] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<ProductFormValues>({
     defaultValues: {
@@ -48,15 +50,85 @@ const SellerDashboard = () => {
     setImages(prev => prev.filter((_, i) => i !== index));
   };
 
-  const onSubmit = (data: ProductFormValues) => {
-    // This is where we would connect to Supabase to save the product
-    console.log("Product data:", data);
-    console.log("Images:", images);
-    
-    toast({
-      title: "Supabase Connection Required",
-      description: "Please connect your app to Supabase to enable product uploads.",
-    });
+  const uploadImages = async () => {
+    const imageUrls: string[] = [];
+    for (const image of images) {
+      const fileExt = image.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from('product-images')
+        .upload(fileName, image);
+
+      if (error) {
+        toast({
+          title: "Image Upload Error",
+          description: error.message,
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(fileName);
+
+      imageUrls.push(publicUrl);
+    }
+    return imageUrls;
+  };
+
+  const onSubmit = async (data: ProductFormValues) => {
+    setIsSubmitting(true);
+
+    try {
+      // Upload images first
+      const imageUrls = await uploadImages();
+      if (imageUrls === null) {
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Insert product into database
+      const { data: product, error } = await supabase
+        .from('products')
+        .insert({
+          name: data.name,
+          description: data.description,
+          price: parseFloat(data.price),
+          category: data.category,
+          location: data.location,
+          is_organic: data.isOrganic,
+          seller_id: supabase.auth.getUser().data.user?.id,
+          images: imageUrls
+        })
+        .select();
+
+      if (error) {
+        toast({
+          title: "Product Upload Error",
+          description: error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      toast({
+        title: "Product Added Successfully",
+        description: "Your product is now listed for sale.",
+      });
+
+      // Reset form
+      form.reset();
+      setImages([]);
+    } catch (error) {
+      toast({
+        title: "Unexpected Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -80,8 +152,8 @@ const SellerDashboard = () => {
               <CardContent>
                 <div className="space-y-4">
                   <div className="text-center p-6 border-2 border-dashed border-border rounded-md">
-                    <p className="text-muted-foreground mb-2">Connect to Supabase</p>
-                    <p className="text-sm text-muted-foreground">You need to connect to Supabase to access seller features</p>
+                    <p className="text-muted-foreground mb-2">Your Supabase Account</p>
+                    <p className="text-sm text-muted-foreground">Manage your products and track sales</p>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -96,11 +168,6 @@ const SellerDashboard = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button className="w-full" variant="outline">
-                  View Public Profile
-                </Button>
-              </CardFooter>
             </Card>
           </div>
           
@@ -248,9 +315,13 @@ const SellerDashboard = () => {
                     </div>
                     
                     <div className="flex justify-end">
-                      <Button type="submit" className="flex items-center gap-2">
+                      <Button 
+                        type="submit" 
+                        className="flex items-center gap-2" 
+                        disabled={isSubmitting}
+                      >
                         <Plus size={16} />
-                        Add Product
+                        {isSubmitting ? 'Adding...' : 'Add Product'}
                       </Button>
                     </div>
                   </form>
