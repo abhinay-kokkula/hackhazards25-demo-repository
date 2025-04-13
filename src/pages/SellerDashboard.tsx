@@ -34,10 +34,21 @@ const SellerDashboard = () => {
     const fetchUserId = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
+      
+      // Redirect to login if user is not authenticated
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "You need to be logged in to access the seller dashboard.",
+          variant: "destructive"
+        });
+        // You can uncomment this line when login page is available
+        // navigate("/login");
+      }
     };
     
     fetchUserId();
-  }, []);
+  }, [navigate]);
   
   const form = useForm<ProductFormValues>({
     defaultValues: {
@@ -62,6 +73,15 @@ const SellerDashboard = () => {
   };
 
   const uploadImages = async () => {
+    if (images.length === 0) {
+      toast({
+        title: "No Images",
+        description: "Please upload at least one image for your product.",
+        variant: "destructive"
+      });
+      return null;
+    }
+
     const imageUrls: string[] = [];
     for (const image of images) {
       const fileExt = image.name.split('.').pop();
@@ -105,7 +125,7 @@ const SellerDashboard = () => {
 
       // Upload images first
       const imageUrls = await uploadImages();
-      if (imageUrls === null) {
+      if (imageUrls === null || imageUrls.length === 0) {
         setIsSubmitting(false);
         return;
       }
