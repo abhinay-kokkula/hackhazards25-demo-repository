@@ -1,3 +1,4 @@
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -6,9 +7,54 @@ import ProductCard from "@/components/ProductCard";
 import ArtisanCard from "@/components/ArtisanCard";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
-// Sample data
+// Sample data for fresh produce
+const farmProduce = [
+  {
+    id: 5,
+    name: "Organic Tomatoes (1kg)",
+    price: 3.99,
+    image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfad?w=800&auto=format&fit=crop",
+    artisan: "Green Valley Farms",
+    location: "Southern Hills",
+    rating: 4.7,
+    isOrganic: true
+  },
+  {
+    id: 6,
+    name: "Green Chillies Bundle",
+    price: 2.50,
+    image: "https://images.unsplash.com/photo-1631236783331-564a5885f00a?w=800&auto=format&fit=crop",
+    artisan: "Spice Hills",
+    location: "Western Plateau",
+    rating: 4.8,
+    isOrganic: true
+  },
+  {
+    id: 7,
+    name: "Farm Fresh Potatoes (2kg)",
+    price: 4.99,
+    image: "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop",
+    artisan: "Root Harvest",
+    location: "Northern Valley",
+    rating: 4.6,
+    isOrganic: true
+  },
+  {
+    id: 8,
+    name: "Mixed Seasonal Vegetables",
+    price: 12.00,
+    image: "https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=800&auto=format&fit=crop",
+    artisan: "Fresh Picks Co-op",
+    location: "Eastern Farmlands",
+    rating: 4.9,
+    isOrganic: true
+  }
+];
+
+// Sample data for featured products
 const featuredProducts = [
   {
     id: 1,
@@ -51,47 +97,7 @@ const featuredProducts = [
   }
 ];
 
-const popularProducts = [
-  {
-    id: 5,
-    name: "Hand-carved Wooden Spoons",
-    price: 18.99,
-    image: "https://images.unsplash.com/photo-1584653059740-fb6fb91eeeff?w=800&auto=format&fit=crop",
-    artisan: "Forest Artisans",
-    location: "Eastern Woods",
-    rating: 4.5
-  },
-  {
-    id: 6,
-    name: "Organic Fruit Preserves Set",
-    price: 24.50,
-    image: "https://images.unsplash.com/photo-1533111476650-d3a4f0361c6b?w=800&auto=format&fit=crop",
-    artisan: "Valley Farms",
-    location: "Sunrise Valley",
-    rating: 4.8,
-    isOrganic: true
-  },
-  {
-    id: 7,
-    name: "Traditional Embroidered Pillow",
-    price: 29.99,
-    image: "https://images.unsplash.com/photo-1584270692844-a76a4d37d0d7?w=800&auto=format&fit=crop",
-    artisan: "Heritage Stitchers",
-    location: "Central Plains",
-    rating: 4.7
-  },
-  {
-    id: 8,
-    name: "Natural Beeswax Candles",
-    price: 15.00,
-    image: "https://images.unsplash.com/photo-1603006905003-be475563bc59?w=800&auto=format&fit=crop",
-    artisan: "Meadow Apiaries",
-    location: "Flower Valley",
-    rating: 4.6,
-    isOrganic: true
-  }
-];
-
+// Sample data for featured artisans
 const featuredArtisans = [
   {
     id: 1,
@@ -124,8 +130,6 @@ const featuredArtisans = [
   }
 ];
 
-const hackathonImage = "public/lovable-uploads/c295a133-d4ce-4a33-b206-b7981833c619.png";
-
 const Index = () => {
   const isMobile = useIsMobile();
   
@@ -143,7 +147,7 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold">Featured Products</h2>
-              <Button variant="link" className="flex items-center text-primary">
+              <Button variant="link" className="flex items-center text-primary" as={Link} to="/browse">
                 View All <ArrowRight size={16} className="ml-1" />
               </Button>
             </div>
@@ -203,7 +207,7 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold">Featured Artisans & Farmers</h2>
-              <Button variant="link" className="flex items-center text-primary">
+              <Button variant="link" className="flex items-center text-primary" as={Link} to="/browse">
                 View All <ArrowRight size={16} className="ml-1" />
               </Button>
             </div>
@@ -216,18 +220,18 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Popular Products */}
+        {/* Farm Fresh Products - Replaced Popular Right Now */}
         <section className="py-12 bg-secondary/50">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold">Popular Right Now</h2>
-              <Button variant="link" className="flex items-center text-primary">
+              <h2 className="text-3xl font-bold">Farm Fresh Produce</h2>
+              <Button variant="link" className="flex items-center text-primary" as={Link} to="/browse/Farm Fresh">
                 View All <ArrowRight size={16} className="ml-1" />
               </Button>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {popularProducts.map((product) => (
+              {farmProduce.map((product) => (
                 <ProductCard key={product.id} {...product} />
               ))}
             </div>
@@ -243,7 +247,7 @@ const Index = () => {
               No technical expertise needed - we'll help you every step of the way.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg">
+              <Button className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg" as={Link} to="/seller">
                 Become a Seller
               </Button>
               <Button variant="outline" className="border-white text-white hover:bg-white/20 px-8 py-6 text-lg">

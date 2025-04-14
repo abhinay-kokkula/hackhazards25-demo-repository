@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from './AuthProvider';
+import { useCart } from './CartProvider';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +20,11 @@ import { toast } from "@/components/ui/sonner";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { totalItems } = useCart();
   
   const handleSignOut = async () => {
     try {
@@ -30,6 +33,13 @@ const Navbar = () => {
       navigate("/");
     } catch (error) {
       toast.error("Failed to sign out. Please try again.");
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/browse?search=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -48,22 +58,26 @@ const Navbar = () => {
           {/* Search bar - hidden on mobile */}
           {!isMobile && (
             <div className="flex-1 max-w-md mx-4">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  type="search" 
-                  placeholder="Search for products, artisans, or farms..." 
-                  className="pl-9 pr-4 py-2 w-full" 
-                />
-              </div>
+              <form onSubmit={handleSearch}>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    type="search" 
+                    placeholder="Search for products, artisans, or farms..." 
+                    className="pl-9 pr-4 py-2 w-full"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </form>
             </div>
           )}
 
           {/* Nav links - visible on desktop */}
           {!isMobile && (
             <div className="hidden md:flex items-center space-x-6">
-              <Link to="/" className="text-foreground hover:text-primary transition-colors">Shop</Link>
-              <Link to="/" className="text-foreground hover:text-primary transition-colors">Artisans</Link>
+              <Link to="/browse" className="text-foreground hover:text-primary transition-colors">Shop</Link>
+              <Link to="/browse" className="text-foreground hover:text-primary transition-colors">Artisans</Link>
               <Link to="/" className="text-foreground hover:text-primary transition-colors">About</Link>
               <Link to="/seller" className="text-foreground hover:text-primary transition-colors">Sell</Link>
             </div>
@@ -95,7 +109,7 @@ const Navbar = () => {
                     <Store className="mr-2 h-4 w-4" />
                     <span>Seller Dashboard</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem onClick={() => navigate("/account/orders")} className="cursor-pointer">
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     <span>My Orders</span>
                   </DropdownMenuItem>
@@ -112,9 +126,13 @@ const Navbar = () => {
               </Button>
             )}
             
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/cart")}>
               <ShoppingBag size={20} />
-              <span className="absolute top-0 right-0 h-4 w-4 bg-primary text-white rounded-full text-xs flex items-center justify-center">2</span>
+              {totalItems > 0 && (
+                <span className="absolute top-0 right-0 h-4 w-4 bg-primary text-white rounded-full text-xs flex items-center justify-center">
+                  {totalItems > 9 ? '9+' : totalItems}
+                </span>
+              )}
             </Button>
           </div>
         </div>
@@ -122,14 +140,18 @@ const Navbar = () => {
         {/* Mobile search - only visible on mobile */}
         {isMobile && (
           <div className="mt-3">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="search" 
-                placeholder="Search..." 
-                className="pl-9 pr-4 py-2 w-full" 
-              />
-            </div>
+            <form onSubmit={handleSearch}>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  type="search" 
+                  placeholder="Search..." 
+                  className="pl-9 pr-4 py-2 w-full"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </form>
           </div>
         )}
         
@@ -137,10 +159,11 @@ const Navbar = () => {
         {isMobile && isMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-background border-b border-border p-4 shadow-md animate-gentle-appear">
             <div className="flex flex-col space-y-3">
-              <Link to="/" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Shop</Link>
-              <Link to="/" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Artisans</Link>
+              <Link to="/browse" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Shop</Link>
+              <Link to="/browse" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Artisans</Link>
               <Link to="/" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>About</Link>
               <Link to="/seller" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Sell</Link>
+              <Link to="/cart" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Cart ({totalItems})</Link>
               {!user && (
                 <Link to="/auth" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Sign In / Sign Up</Link>
               )}

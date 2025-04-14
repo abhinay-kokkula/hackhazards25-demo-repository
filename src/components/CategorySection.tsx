@@ -1,5 +1,6 @@
 
 import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface Category {
   name: string;
@@ -48,8 +49,8 @@ const CategorySection = () => {
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {categories.map((category, index) => (
-            <a 
-              href="#" 
+            <Link
+              to={`/browse/${category.name}`}
               key={category.name} 
               className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all p-4 flex flex-col items-center text-center group animate-gentle-appear"
               style={{ animationDelay: `${0.1 * index}s` }}
@@ -60,7 +61,7 @@ const CategorySection = () => {
               <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center text-primary text-sm">
                 Explore <ArrowRight size={14} className="ml-1" />
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </div>
