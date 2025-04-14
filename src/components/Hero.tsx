@@ -1,9 +1,11 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "./AuthProvider";
 
 const Hero = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   return (
     <div className="relative bg-gradient-to-r from-amber-50 to-orange-50">
@@ -21,13 +23,23 @@ const Hero = () => {
             <Button className="bg-primary hover:bg-primary/90 text-white px-8 py-6 text-lg">
               Shop Now
             </Button>
-            <Button 
-              variant="outline" 
-              className="border-primary text-primary hover:bg-primary/10 px-8 py-6 text-lg"
-              onClick={() => navigate('/seller')}
-            >
-              Become a Seller
-            </Button>
+            {user ? (
+              <Button 
+                variant="outline" 
+                className="border-primary text-primary hover:bg-primary/10 px-8 py-6 text-lg"
+                onClick={() => navigate('/seller')}
+              >
+                Become a Seller
+              </Button>
+            ) : (
+              <Button 
+                variant="outline" 
+                className="border-primary text-primary hover:bg-primary/10 px-8 py-6 text-lg"
+                onClick={() => navigate('/auth')}
+              >
+                Sign In / Sign Up
+              </Button>
+            )}
           </div>
         </div>
       </div>
