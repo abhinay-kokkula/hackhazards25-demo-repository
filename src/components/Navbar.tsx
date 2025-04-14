@@ -40,6 +40,7 @@ const Navbar = () => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/browse?search=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery("");
     }
   };
 
@@ -126,14 +127,16 @@ const Navbar = () => {
               </Button>
             )}
             
-            <Button variant="ghost" size="icon" onClick={() => navigate("/cart")}>
-              <ShoppingBag size={20} />
+            <div className="relative">
+              <Button variant="ghost" size="icon" onClick={() => navigate("/cart")}>
+                <ShoppingBag size={20} />
+              </Button>
               {totalItems > 0 && (
-                <span className="absolute top-0 right-0 h-4 w-4 bg-primary text-white rounded-full text-xs flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 h-5 w-5 bg-primary text-white rounded-full text-xs flex items-center justify-center">
                   {totalItems > 9 ? '9+' : totalItems}
                 </span>
               )}
-            </Button>
+            </div>
           </div>
         </div>
         

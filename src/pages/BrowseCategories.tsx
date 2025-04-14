@@ -56,7 +56,15 @@ const BrowseCategories = () => {
   const { data: products, isLoading, error } = useQuery({
     queryKey: ['products', selectedCategory, searchQuery],
     queryFn: async () => {
-      let query = supabase.from('products').select('*');
+      let query = supabase.from('products').select(`
+        *,
+        profiles!inner(
+          full_name,
+          avatar_url,
+          rating,
+          location
+        )
+      `);
       
       // Apply category filter if selected
       if (selectedCategory) {
@@ -76,7 +84,12 @@ const BrowseCategories = () => {
         throw new Error(error.message);
       }
       
-      return data;
+      return data?.map(product => ({
+        ...product,
+        seller_name: product.profiles.full_name,
+        seller_avatar: product.profiles.avatar_url,
+        seller_rating: product.profiles.rating,
+      }));
     }
   });
 
@@ -188,11 +201,14 @@ const BrowseCategories = () => {
                   id={product.id}
                   name={product.name}
                   price={product.price}
-                  image={product.images?.[0] || "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?w=800&auto=format&fit=crop"}
-                  artisan={product.seller_name || "Local Artisan"}
-                  location={product.location || "Rural Region"}
-                  rating={4.5}
-                  isOrganic={product.is_organic}
+                  images={product.images}
+                  category={product.category}
+                  seller_id={product.seller_id}
+                  seller_name={product.seller_name}
+                  seller_avatar={product.seller_avatar}
+                  seller_rating={product.seller_rating}
+                  location={product.location}
+                  is_organic={product.is_organic}
                 />
               ))}
             </div>

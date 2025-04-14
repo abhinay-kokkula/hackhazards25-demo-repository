@@ -22,3 +22,10 @@ export interface SellerProfile {
   bio?: string;
   rating?: number;
 }
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  icon: React.ReactNode;
+  description?: string;
+}

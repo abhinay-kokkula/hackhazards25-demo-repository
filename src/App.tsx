@@ -39,6 +39,11 @@ const App = () => (
                   <SellerDashboard />
                 </ProtectedRoute>
               } />
+              <Route path="/account/orders" element={
+                <ProtectedRoute>
+                  <SellerDashboard />
+                </ProtectedRoute>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

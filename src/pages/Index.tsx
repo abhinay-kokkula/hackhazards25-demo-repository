@@ -1,3 +1,4 @@
+
 import { useIsMobile } from "@/hooks/use-mobile";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
@@ -12,7 +13,7 @@ import { ArrowRight } from "lucide-react";
 // Sample data for fresh produce
 const farmProduce = [
   {
-    id: 5,
+    id: "5",
     name: "Organic Tomatoes (1kg)",
     price: 3.99,
     images: ["https://images.unsplash.com/photo-1592924357228-91a4daadcfad?w=800&auto=format&fit=crop"],
@@ -23,7 +24,7 @@ const farmProduce = [
     seller_id: "1"
   },
   {
-    id: 6,
+    id: "6",
     name: "Green Chillies Bundle",
     price: 2.50,
     images: ["https://images.unsplash.com/photo-1631236783331-564a5885f00a?w=800&auto=format&fit=crop"],
@@ -34,7 +35,7 @@ const farmProduce = [
     seller_id: "2"
   },
   {
-    id: 7,
+    id: "7",
     name: "Farm Fresh Potatoes (2kg)",
     price: 4.99,
     images: ["https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop"],
@@ -45,7 +46,7 @@ const farmProduce = [
     seller_id: "3"
   },
   {
-    id: 8,
+    id: "8",
     name: "Mixed Seasonal Vegetables",
     price: 12.00,
     images: ["https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=800&auto=format&fit=crop"],
@@ -60,7 +61,7 @@ const farmProduce = [
 // Sample data for featured products
 const featuredProducts = [
   {
-    id: 1,
+    id: "1",
     name: "Hand-woven Bamboo Basket",
     price: 45.99,
     images: ["https://images.unsplash.com/photo-1590422749897-47036da0b0ff?w=800&auto=format&fit=crop"],
@@ -71,7 +72,7 @@ const featuredProducts = [
     seller_id: "5"
   },
   {
-    id: 2,
+    id: "2",
     name: "Organic Mountain Honey",
     price: 12.50,
     images: ["https://images.unsplash.com/photo-1587049633312-d628ae50a8ae?w=800&auto=format&fit=crop"],
@@ -82,7 +83,7 @@ const featuredProducts = [
     seller_id: "6"
   },
   {
-    id: 3,
+    id: "3",
     name: "Handmade Clay Pottery Set",
     price: 89.99,
     images: ["https://images.unsplash.com/photo-1565193298442-2373bcb29cd4?w=800&auto=format&fit=crop"],
@@ -92,7 +93,7 @@ const featuredProducts = [
     seller_id: "7"
   },
   {
-    id: 4,
+    id: "4",
     name: "Natural Wool Shawl",
     price: 35.00,
     images: ["https://images.unsplash.com/photo-1580484031577-cc3ca5e61ab6?w=800&auto=format&fit=crop"],
@@ -267,7 +268,10 @@ const Index = () => {
               No technical expertise needed - we'll help you every step of the way.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg" as={Link} to="/seller">
+              <Button 
+                className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg"
+                onClick={() => navigate("/seller")}
+              >
                 Become a Seller
               </Button>
               <Button variant="outline" className="border-white text-white hover:bg-white/20 px-8 py-6 text-lg">

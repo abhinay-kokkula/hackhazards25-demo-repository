@@ -1,5 +1,5 @@
 
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MapPin, Star, Package, MessageSquare } from "lucide-react";
+import { SellerProfile as SellerProfileType } from "@/types";
 
 const SellerProfile = () => {
   const { id: sellerId } = useParams<{ id: string }>();
@@ -26,7 +27,7 @@ const SellerProfile = () => {
         return null;
       }
       
-      return data;
+      return data as SellerProfileType;
     },
     enabled: !!sellerId
   });
@@ -83,7 +84,7 @@ const SellerProfile = () => {
   }
 
   // Get default seller info if profiles table doesn't have all fields
-  const sellerName = seller.full_name || seller.name || "Rural Artisan";
+  const sellerName = seller.full_name || "Rural Artisan";
   const sellerLocation = seller.location || "Rural Region";
   const sellerRating = seller.rating || 4.7;
   const sellerJoined = seller.created_at ? new Date(seller.created_at).toLocaleDateString() : "2023";
@@ -157,11 +158,13 @@ const SellerProfile = () => {
                   id={product.id}
                   name={product.name}
                   price={product.price}
-                  image={product.images?.[0] || "https://images.unsplash.com/photo-1589782182703-2aaa69037b5b?w=800&auto=format&fit=crop"}
-                  artisan={sellerName}
+                  images={product.images || []}
+                  seller_id={product.seller_id}
+                  seller_name={sellerName}
+                  seller_avatar={sellerImage}
+                  seller_rating={sellerRating}
                   location={product.location || sellerLocation}
-                  rating={product.rating || sellerRating}
-                  isOrganic={product.is_organic}
+                  is_organic={product.is_organic}
                 />
               ))}
             </div>

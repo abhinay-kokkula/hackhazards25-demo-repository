@@ -6,10 +6,15 @@ import Footer from "@/components/Footer";
 import { useCart } from "@/components/CartProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2, Plus, Minus, ShoppingBag, CreditCard, ChevronRight } from "lucide-react";
+import { 
+  Trash2, Plus, Minus, ShoppingBag, CreditCard, 
+  ChevronRight, Check, Home, CreditCard as CardIcon,
+  Smartphone
+} from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { PaymentMethod } from "@/types";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -17,6 +22,29 @@ const Cart = () => {
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [promoCode, setPromoCode] = useState("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("cod");
+  
+  // Payment methods
+  const paymentMethods: PaymentMethod[] = [
+    {
+      id: "cod",
+      name: "Cash on Delivery",
+      icon: <Home size={20} />,
+      description: "Pay with cash when your order is delivered"
+    },
+    {
+      id: "card",
+      name: "Credit/Debit Card",
+      icon: <CardIcon size={20} />,
+      description: "Pay securely with your card"
+    },
+    {
+      id: "upi",
+      name: "UPI",
+      icon: <Smartphone size={20} />,
+      description: "PhonePe, Google Pay, or any UPI app"
+    }
+  ];
   
   // Constants for pricing
   const shipping = 5.99;
@@ -54,10 +82,12 @@ const Cart = () => {
           items: cart.map(item => ({
             product_id: item.id,
             quantity: item.quantity,
-            price: item.price
+            price: item.price,
+            seller_id: item.sellerId
           })),
           total_amount: total,
           status: 'paid',
+          payment_method: selectedPaymentMethod,
           shipping_address: null // Would be filled with actual address in a real app
         });
         
@@ -236,6 +266,43 @@ const Cart = () => {
                 </div>
               </div>
               
+              {/* Payment Method Selection */}
+              <div className="mb-6">
+                <h3 className="font-medium mb-3">Payment Method</h3>
+                <div className="space-y-2">
+                  {paymentMethods.map(method => (
+                    <div
+                      key={method.id}
+                      className={`border rounded-md p-3 cursor-pointer flex items-start ${
+                        selectedPaymentMethod === method.id
+                          ? 'border-primary bg-primary/5'
+                          : 'hover:border-muted-foreground'
+                      }`}
+                      onClick={() => setSelectedPaymentMethod(method.id)}
+                    >
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-3 mt-0.5 ${
+                        selectedPaymentMethod === method.id
+                          ? 'border-primary bg-primary text-white'
+                          : 'border-muted-foreground'
+                      }`}>
+                        {selectedPaymentMethod === method.id && <Check size={12} />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center">
+                          <span className="mr-2">{method.icon}</span>
+                          <span className="font-medium">{method.name}</span>
+                        </div>
+                        {method.description && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {method.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
               <Button 
                 className="w-full" 
                 size="lg"
@@ -258,16 +325,16 @@ const Cart = () => {
               <div className="mt-6 text-sm text-muted-foreground">
                 <p className="mb-2">We accept:</p>
                 <div className="flex space-x-2">
-                  <div className="w-10 h-6 bg-secondary rounded"></div>
-                  <div className="w-10 h-6 bg-secondary rounded"></div>
-                  <div className="w-10 h-6 bg-secondary rounded"></div>
-                  <div className="w-10 h-6 bg-secondary rounded"></div>
+                  <div className="w-10 h-6 bg-secondary rounded flex items-center justify-center">Visa</div>
+                  <div className="w-10 h-6 bg-secondary rounded flex items-center justify-center">MC</div>
+                  <div className="w-16 h-6 bg-secondary rounded flex items-center justify-center">PayTM</div>
+                  <div className="w-16 h-6 bg-secondary rounded flex items-center justify-center">UPI</div>
                 </div>
               </div>
             </div>
             
             <div className="mt-4 text-sm text-muted-foreground">
-              <p>Need help? <a href="#" className="text-primary hover:underline">Contact support</a></p>
+              <p>Need help? <Link to="/support" className="text-primary hover:underline">Contact support</Link></p>
             </div>
           </div>
         </div>
