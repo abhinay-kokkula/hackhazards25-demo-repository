@@ -1,34 +1,26 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, ShoppingBag, Star } from "lucide-react";
 import { useCart } from "./CartProvider";
-
-interface ProductCardProps {
-  id: number | string;
-  name: string;
-  price: number;
-  image: string;
-  artisan: string;
-  location: string;
-  rating: number;
-  isFeatured?: boolean;
-  isOrganic?: boolean;
-}
+import { ProductWithSellerInfo } from "@/types";
 
 const ProductCard = ({ 
   id, 
   name, 
   price, 
-  image, 
-  artisan, 
-  location, 
-  rating, 
-  isFeatured = false,
-  isOrganic = false
-}: ProductCardProps) => {
+  images, 
+  category,
+  location,
+  is_organic,
+  seller_id,
+  seller_name = "Local Artisan",
+  seller_avatar,
+  seller_rating = 4.5,
+  isFeatured = false
+}: ProductWithSellerInfo & { isFeatured?: boolean }) => {
   const [isHovered, setIsHovered] = useState(false);
   const { addToCart } = useCart();
   
@@ -37,8 +29,9 @@ const ProductCard = ({
       id,
       name,
       price,
-      image,
-      sellerName: artisan
+      image: images?.[0] || "https://via.placeholder.com/150",
+      sellerName: seller_name,
+      sellerId: seller_id
     });
   };
   
@@ -51,7 +44,7 @@ const ProductCard = ({
       <div className="relative h-48 overflow-hidden">
         <Link to={`/product/${id}`}>
           <img 
-            src={image} 
+            src={images?.[0] || "https://via.placeholder.com/150"} 
             alt={name} 
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
           />
@@ -63,7 +56,7 @@ const ProductCard = ({
             Featured
           </Badge>
         )}
-        {isOrganic && (
+        {is_organic && (
           <Badge 
             className="absolute top-2 right-2 bg-accent text-white"
           >
@@ -74,7 +67,7 @@ const ProductCard = ({
           variant="ghost" 
           size="icon" 
           className="absolute top-2 right-2 bg-white/80 hover:bg-white text-muted-foreground hover:text-primary rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ display: isOrganic ? 'none' : 'flex' }}
+          style={{ display: is_organic ? 'none' : 'flex' }}
         >
           <Heart size={16} />
         </Button>
@@ -87,12 +80,12 @@ const ProductCard = ({
           </Link>
           <div className="flex items-center text-amber-500">
             <Star size={14} fill="currentColor" />
-            <span className="text-xs ml-1">{rating.toFixed(1)}</span>
+            <span className="text-xs ml-1">{seller_rating.toFixed(1)}</span>
           </div>
         </div>
         
         <div className="mb-3 text-sm text-muted-foreground">
-          by <Link to={`/seller/${id}`} className="hover:text-primary transition-colors">{artisan}</Link> • {location}
+          by <Link to={`/seller/${seller_id}`} className="hover:text-primary transition-colors">{seller_name}</Link> • {location}
         </div>
         
         <div className="flex justify-between items-center">
