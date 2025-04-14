@@ -223,7 +223,7 @@ const Index = () => {
               <Button 
                 variant="link" 
                 className="flex items-center text-primary"
-                onClick={() => navigate("/browse")}
+                onClick={() => navigate("/artisans")}
               >
                 View All <ArrowRight size={16} className="ml-1" />
               </Button>

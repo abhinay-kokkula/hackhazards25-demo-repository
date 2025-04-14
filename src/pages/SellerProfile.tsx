@@ -87,7 +87,7 @@ const SellerProfile = () => {
   const sellerName = seller.full_name || "Rural Artisan";
   const sellerLocation = seller.location || "Rural Region";
   const sellerRating = seller.rating || 4.7;
-  const sellerJoined = seller.created_at ? new Date(seller.created_at).toLocaleDateString() : "2023";
+  const sellerJoined = "2023"; // Default since created_at is no longer in the type
   const sellerImage = seller.avatar_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&auto=format&fit=crop";
 
   return (

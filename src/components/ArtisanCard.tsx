@@ -2,9 +2,10 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Star, Check } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface ArtisanCardProps {
-  id: number;
+  id: number | string;
   name: string;
   image: string;
   profession: string;
@@ -61,12 +62,16 @@ const ArtisanCard = ({
       </div>
       
       <div className="border-t border-border p-3 bg-secondary/30 flex justify-between items-center">
-        <Badge variant="outline" className="text-xs bg-white">
-          View Profile
-        </Badge>
-        <Button variant="link" className="text-sm h-auto p-0 text-primary" size="sm">
-          Shop Products
-        </Button>
+        <Link to={`/seller/${id}`}>
+          <Badge variant="outline" className="text-xs bg-white hover:bg-accent/10 cursor-pointer">
+            View Profile
+          </Badge>
+        </Link>
+        <Link to={`/seller/${id}`}>
+          <Button variant="link" className="text-sm h-auto p-0 text-primary" size="sm">
+            Shop Products
+          </Button>
+        </Link>
       </div>
     </div>
   );

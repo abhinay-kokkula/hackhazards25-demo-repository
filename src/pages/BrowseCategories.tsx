@@ -3,11 +3,10 @@ import { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, ChevronRight } from "lucide-react";
+import { Search, ChevronRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
-import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -46,7 +45,6 @@ const allCategories = [
 ];
 
 const BrowseCategories = () => {
-  const { toast } = useToast();
   const navigate = useNavigate();
   const { category: categoryParam } = useParams<{ category?: string }>();
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,12 +56,7 @@ const BrowseCategories = () => {
     queryFn: async () => {
       let query = supabase.from('products').select(`
         *,
-        profiles!inner(
-          full_name,
-          avatar_url,
-          rating,
-          location
-        )
+        profiles(id, full_name, avatar_url, rating, location)
       `);
       
       // Apply category filter if selected
@@ -84,12 +77,15 @@ const BrowseCategories = () => {
         throw new Error(error.message);
       }
       
-      return data?.map(product => ({
-        ...product,
-        seller_name: product.profiles.full_name,
-        seller_avatar: product.profiles.avatar_url,
-        seller_rating: product.profiles.rating,
-      }));
+      return data?.map(product => {
+        const profileData = product.profiles;
+        return {
+          ...product,
+          seller_name: profileData?.full_name || "Local Artisan",
+          seller_avatar: profileData?.avatar_url,
+          seller_rating: profileData?.rating || 4.5,
+        };
+      }) || [];
     }
   });
 
@@ -201,7 +197,7 @@ const BrowseCategories = () => {
                   id={product.id}
                   name={product.name}
                   price={product.price}
-                  images={product.images}
+                  images={product.images || []}
                   category={product.category}
                   seller_id={product.seller_id}
                   seller_name={product.seller_name}

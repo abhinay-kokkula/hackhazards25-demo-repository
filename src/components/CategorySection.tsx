@@ -45,7 +45,12 @@ const CategorySection = () => {
   return (
     <section className="py-12 bg-secondary/50">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-8">Browse Categories</h2>
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold">Browse Categories</h2>
+          <Link to="/browse" className="text-primary flex items-center hover:underline">
+            View All <ArrowRight size={16} className="ml-1" />
+          </Link>
+        </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {categories.map((category, index) => (

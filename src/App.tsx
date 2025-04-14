@@ -15,6 +15,8 @@ import BrowseCategories from "./pages/BrowseCategories";
 import SellerProfile from "./pages/SellerProfile";
 import Cart from "./pages/Cart";
 import OrderSuccess from "./pages/OrderSuccess";
+import ProductDetail from "./pages/ProductDetail";
+import ArtisansList from "./pages/ArtisansList";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +34,8 @@ const App = () => (
               <Route path="/browse" element={<BrowseCategories />} />
               <Route path="/browse/:category" element={<BrowseCategories />} />
               <Route path="/seller/:id" element={<SellerProfile />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/artisans" element={<ArtisansList />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/order-success" element={<OrderSuccess />} />
               <Route path="/seller" element={

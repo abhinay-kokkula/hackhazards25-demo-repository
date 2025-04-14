@@ -29,3 +29,18 @@ export interface PaymentMethod {
   icon: React.ReactNode;
   description?: string;
 }
+
+export interface ProductDetail extends ProductWithSellerInfo {
+  description: string;
+}
+
+export interface ArtisanData {
+  id: number | string;
+  name: string;
+  image: string;
+  profession: string;
+  location: string;
+  rating: number;
+  productCount: number;
+  isVerified?: boolean;
+}
