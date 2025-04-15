@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -215,6 +214,19 @@ const SellerDashboard = () => {
     });
     setEditingProduct(null);
     setIsAddProductOpen(true);
+  };
+
+  const getNewDraftProduct = () => {
+    return {
+      id: crypto.randomUUID(),
+      name: "",
+      price: 0,
+      category: "",
+      description: "",
+      status: "draft",
+      inventory: 0,
+      image: "https://images.unsplash.com/photo-1597484662317-c93a5ec51518?w=300"
+    };
   };
 
   return (

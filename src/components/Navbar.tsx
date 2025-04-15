@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
-  Search, ShoppingBag, Menu, X, User, LogOut, ShoppingCart, Store 
+  Search, ShoppingBag, Menu, X, User, LogOut, ShoppingCart, Store, Globe 
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from './AuthProvider';
@@ -17,10 +17,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "@/components/ui/sonner";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { SupportedLanguage } from "@/types";
+
+// Different supported languages
+const languages: { code: SupportedLanguage; name: string }[] = [
+  { code: "en", name: "English" },
+  { code: "hi", name: "हिंदी (Hindi)" },
+  { code: "te", name: "తెలుగు (Telugu)" },
+  { code: "mr", name: "मराठी (Marathi)" }
+];
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [language, setLanguage] = useState<SupportedLanguage>("en");
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -42,6 +59,12 @@ const Navbar = () => {
       navigate(`/browse?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchQuery("");
     }
+  };
+  
+  const handleLanguageChange = (value: string) => {
+    setLanguage(value as SupportedLanguage);
+    // Here you would typically update some global language state
+    // or use a translation context to change the app language
   };
 
   return (
@@ -78,7 +101,24 @@ const Navbar = () => {
           {!isMobile && (
             <div className="hidden md:flex items-center space-x-6">
               <Link to="/browse" className="text-foreground hover:text-primary transition-colors">Shop</Link>
-              <Link to="/browse" className="text-foreground hover:text-primary transition-colors">Artisans</Link>
+              
+              {/* Language Selector */}
+              <div className="relative flex items-center">
+                <Select defaultValue={language} onValueChange={handleLanguageChange}>
+                  <SelectTrigger className="w-[130px] h-8 text-sm border-none bg-transparent hover:text-primary transition-colors focus:ring-0">
+                    <Globe className="mr-1 h-4 w-4" />
+                    <SelectValue placeholder="Language" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map(lang => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
               <Link to="/" className="text-foreground hover:text-primary transition-colors">About</Link>
               <Link to="/seller" className="text-foreground hover:text-primary transition-colors">Sell</Link>
             </div>
@@ -163,10 +203,30 @@ const Navbar = () => {
           <div className="absolute top-full left-0 right-0 bg-background border-b border-border p-4 shadow-md animate-gentle-appear">
             <div className="flex flex-col space-y-3">
               <Link to="/browse" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Shop</Link>
-              <Link to="/browse" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Artisans</Link>
               <Link to="/" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>About</Link>
               <Link to="/seller" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Sell</Link>
               <Link to="/cart" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Cart ({totalItems})</Link>
+              
+              {/* Language options for mobile */}
+              <div className="py-2">
+                <p className="text-sm text-muted-foreground mb-2">Language:</p>
+                <div className="flex flex-wrap gap-2">
+                  {languages.map(lang => (
+                    <Button 
+                      key={lang.code}
+                      size="sm" 
+                      variant={language === lang.code ? "default" : "outline"}
+                      onClick={() => {
+                        setLanguage(lang.code);
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      {lang.name}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+              
               {!user && (
                 <Link to="/auth" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Sign In / Sign Up</Link>
               )}
