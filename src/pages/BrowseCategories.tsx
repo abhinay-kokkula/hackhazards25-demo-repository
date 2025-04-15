@@ -49,15 +49,14 @@ const BrowseCategories = () => {
   const { category: categoryParam } = useParams<{ category?: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryParam || null);
+  const [language, setLanguage] = useState<string>("en"); // Default language is English
   
   // Fetch products from Supabase
   const { data: products, isLoading, error } = useQuery({
     queryKey: ['products', selectedCategory, searchQuery],
     queryFn: async () => {
-      let query = supabase.from('products').select(`
-        *,
-        profiles(id, full_name, avatar_url, rating, location)
-      `);
+      // First fetch the products
+      let query = supabase.from('products').select('*');
       
       // Apply category filter if selected
       if (selectedCategory) {
@@ -71,21 +70,43 @@ const BrowseCategories = () => {
         query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,location.ilike.%${searchQuery}%`);
       }
       
-      const { data, error } = await query;
+      const { data: productsData, error: productsError } = await query;
       
-      if (error) {
-        throw new Error(error.message);
+      if (productsError) {
+        console.error("Error fetching products:", productsError);
+        throw new Error(productsError.message);
       }
       
-      return data?.map(product => {
-        const profileData = product.profiles;
+      // Then fetch the seller profiles for these products
+      const enhancedProducts = await Promise.all((productsData || []).map(async (product) => {
+        // Fetch the seller profile for this product
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', product.seller_id)
+          .single();
+          
+        if (profileError) {
+          console.error("Error fetching seller profile:", profileError);
+          // Return product with default seller values if profile fetch fails
+          return {
+            ...product,
+            seller_name: "Local Artisan",
+            seller_avatar: null,
+            seller_rating: 4.5,
+          };
+        }
+        
+        // Return product with seller information
         return {
           ...product,
           seller_name: profileData?.full_name || "Local Artisan",
           seller_avatar: profileData?.avatar_url,
           seller_rating: profileData?.rating || 4.5,
         };
-      }) || [];
+      }));
+      
+      return enhancedProducts;
     }
   });
 
@@ -107,6 +128,55 @@ const BrowseCategories = () => {
     }
   };
 
+  // Language translations
+  const translations: Record<string, Record<string, string>> = {
+    en: {
+      browse: "Browse All Categories",
+      search: "Search products...",
+      noProducts: "No products found",
+      viewAll: "View all categories",
+      home: "Home",
+      filterByRegion: "Filter by Region",
+      allRegions: "All Regions",
+      allCategories: "All Categories"
+    },
+    hi: {
+      browse: "सभी श्रेणियां ब्राउज़ करें",
+      search: "उत्पाद खोजें...",
+      noProducts: "कोई उत्पाद नहीं मिला",
+      viewAll: "सभी श्रेणियां देखें",
+      home: "होम",
+      filterByRegion: "क्षेत्र द्वारा फ़िल्टर करें",
+      allRegions: "सभी क्षेत्र",
+      allCategories: "सभी श्रेणियां"
+    },
+    te: {
+      browse: "అన్ని వర్గాలను బ్రౌజ్ చేయండి",
+      search: "ఉత్పత్తులను శోధించండి...",
+      noProducts: "ఉత్పత్తులు కనుగొనబడలేదు",
+      viewAll: "అన్ని వర్గాలను చూడండి",
+      home: "హోమ్",
+      filterByRegion: "ప్రాంతం ద్వారా వడపోత",
+      allRegions: "అన్ని ప్రాంతాలు",
+      allCategories: "అన్ని వర్గాలు"
+    },
+    mr: {
+      browse: "सर्व श्रेण्या ब्राउज करा",
+      search: "उत्पादने शोधा...",
+      noProducts: "कोणतेही उत्पादन आढळले नाही",
+      viewAll: "सर्व श्रेण्या पहा",
+      home: "होम",
+      filterByRegion: "प्रदेशानुसार फिल्टर करा",
+      allRegions: "सर्व प्रदेश",
+      allCategories: "सर्व श्रेण्या"
+    }
+  };
+
+  // Get translation based on current language
+  const t = (key: string): string => {
+    return translations[language]?.[key] || translations.en[key];
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -117,11 +187,11 @@ const BrowseCategories = () => {
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold">{selectedCategory || "Browse All Categories"}</h1>
+                <h1 className="text-3xl font-bold">{selectedCategory || t('browse')}</h1>
                 <div className="flex items-center text-sm text-muted-foreground mt-1">
-                  <Link to="/" className="hover:text-primary">Home</Link>
+                  <Link to="/" className="hover:text-primary">{t('home')}</Link>
                   <ChevronRight size={14} className="mx-1" />
-                  <Link to="/browse" className="hover:text-primary">Browse</Link>
+                  <Link to="/browse" className="hover:text-primary">{t('browse')}</Link>
                   {selectedCategory && (
                     <>
                       <ChevronRight size={14} className="mx-1" />
@@ -137,7 +207,7 @@ const BrowseCategories = () => {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     type="search" 
-                    placeholder="Search products..."
+                    placeholder={t('search')}
                     className="pl-10 w-full md:w-64 lg:w-80"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -147,16 +217,51 @@ const BrowseCategories = () => {
             </div>
           </div>
         </div>
+
+        {/* Language selector */}
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-wrap gap-2 mb-4">
+            <span className="text-sm text-muted-foreground self-center">Language:</span>
+            <Button 
+              variant={language === "en" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setLanguage("en")}
+            >
+              English
+            </Button>
+            <Button 
+              variant={language === "hi" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setLanguage("hi")}
+            >
+              हिन्दी (Hindi)
+            </Button>
+            <Button 
+              variant={language === "te" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setLanguage("te")}
+            >
+              తెలుగు (Telugu)
+            </Button>
+            <Button 
+              variant={language === "mr" ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setLanguage("mr")}
+            >
+              मराठी (Marathi)
+            </Button>
+          </div>
+        </div>
         
         {/* Categories section */}
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex flex-wrap gap-2">
             <Button
               variant={selectedCategory === null ? "default" : "outline"}
               className="rounded-full"
               onClick={() => handleCategorySelect(null)}
             >
-              All Categories
+              {t('allCategories')}
             </Button>
             
             {allCategories.map((category) => (
@@ -210,14 +315,14 @@ const BrowseCategories = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-lg text-muted-foreground">No products found</p>
+              <p className="text-lg text-muted-foreground">{t('noProducts')}</p>
               {selectedCategory && (
                 <Button 
                   variant="outline" 
                   className="mt-4"
                   onClick={() => handleCategorySelect(null)}
                 >
-                  View all categories
+                  {t('viewAll')}
                 </Button>
               )}
             </div>

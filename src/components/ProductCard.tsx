@@ -7,6 +7,14 @@ import { Heart, ShoppingBag, Star } from "lucide-react";
 import { useCart } from "./CartProvider";
 import { ProductWithSellerInfo } from "@/types";
 
+// Default product images for fallback
+const DEFAULT_PRODUCT_IMAGES = [
+  "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1587049633312-d628ae50a8ae?w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1592924357228-91a4daadcfad?w=800&auto=format&fit=crop"
+];
+
 const ProductCard = ({ 
   id, 
   name, 
@@ -22,14 +30,25 @@ const ProductCard = ({
   isFeatured = false
 }: ProductWithSellerInfo & { isFeatured?: boolean }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { addToCart } = useCart();
+  
+  // Get a valid product image with fallback
+  const getProductImage = () => {
+    if (imageError || !images || images.length === 0) {
+      // Use a deterministic fallback image based on id
+      const index = id ? (id.charCodeAt(0) % DEFAULT_PRODUCT_IMAGES.length) : 0;
+      return DEFAULT_PRODUCT_IMAGES[index];
+    }
+    return images[0];
+  };
   
   const handleAddToCart = () => {
     addToCart({
       id,
       name,
       price,
-      image: images?.[0] || "https://via.placeholder.com/150",
+      image: getProductImage(),
       sellerName: seller_name,
       sellerId: seller_id
     });
@@ -44,9 +63,10 @@ const ProductCard = ({
       <div className="relative h-48 overflow-hidden">
         <Link to={`/product/${id}`}>
           <img 
-            src={images?.[0] || "https://via.placeholder.com/150"} 
+            src={getProductImage()} 
             alt={name} 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            onError={() => setImageError(true)}
           />
         </Link>
         {isFeatured && (
@@ -85,7 +105,7 @@ const ProductCard = ({
         </div>
         
         <div className="mb-3 text-sm text-muted-foreground">
-          by <Link to={`/seller/${seller_id}`} className="hover:text-primary transition-colors">{seller_name}</Link> • {location}
+          by <Link to={`/seller/${seller_id}`} className="hover:text-primary transition-colors">{seller_name}</Link> • {location || "Rural Region"}
         </div>
         
         <div className="flex justify-between items-center">

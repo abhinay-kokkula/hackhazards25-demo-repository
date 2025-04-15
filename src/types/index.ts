@@ -21,6 +21,7 @@ export interface SellerProfile {
   location?: string;
   bio?: string;
   rating?: number;
+  products?: ProductWithSellerInfo[];
 }
 
 export interface PaymentMethod {
@@ -43,4 +44,15 @@ export interface ArtisanData {
   rating: number;
   productCount: number;
   isVerified?: boolean;
+}
+
+// Language support
+export type SupportedLanguage = "en" | "hi" | "te" | "mr";
+
+export interface TranslationEntry {
+  [key: string]: string;
+}
+
+export interface Translations {
+  [language: string]: TranslationEntry;
 }
