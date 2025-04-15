@@ -1,6 +1,22 @@
 
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { SupportedLanguage } from "@/types";
+
+// Different supported languages
+const languages: { code: SupportedLanguage; name: string }[] = [
+  { code: "en", name: "English" },
+  { code: "hi", name: "हिंदी (Hindi)" },
+  { code: "te", name: "తెలుగు (Telugu)" },
+  { code: "mr", name: "मराठी (Marathi)" }
+];
 
 const Hero = () => {
   const navigate = useNavigate();
@@ -12,6 +28,21 @@ const Hero = () => {
       <div className="relative container mx-auto px-4 py-16 md:py-24 z-20">
         <div className="flex flex-col md:flex-row items-center">
           <div className="md:w-1/2 mb-8 md:mb-0">
+            <div className="flex justify-start mb-4">
+              <Select defaultValue="en">
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Select Language" />
+                </SelectTrigger>
+                <SelectContent>
+                  {languages.map(lang => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               Direct From Rural <span className="text-primary">Artisans</span> & <span className="text-primary">Farmers</span>
             </h1>
@@ -29,10 +60,10 @@ const Hero = () => {
               <Button 
                 variant="outline" 
                 size="lg"
-                onClick={() => navigate("/artisans")}
+                onClick={() => navigate("/browse")}
                 className="px-8"
               >
-                Meet Our Artisans
+                Explore Products
               </Button>
             </div>
           </div>

@@ -4,13 +4,12 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import CategorySection from "@/components/CategorySection";
 import ProductCard from "@/components/ProductCard";
-import ArtisanCard from "@/components/ArtisanCard";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
-// Sample data for fresh produce
+// Sample data for fresh produce with custom order property
 const farmProduce = [
   {
     id: "5",
@@ -21,7 +20,8 @@ const farmProduce = [
     location: "Southern Hills",
     seller_rating: 4.7,
     is_organic: true,
-    seller_id: "1"
+    seller_id: "1",
+    order: 1
   },
   {
     id: "6",
@@ -32,7 +32,8 @@ const farmProduce = [
     location: "Western Plateau",
     seller_rating: 4.8,
     is_organic: true,
-    seller_id: "2"
+    seller_id: "2",
+    order: 3
   },
   {
     id: "7",
@@ -43,7 +44,8 @@ const farmProduce = [
     location: "Northern Valley",
     seller_rating: 4.6,
     is_organic: true,
-    seller_id: "3"
+    seller_id: "3",
+    order: 2
   },
   {
     id: "8",
@@ -54,11 +56,12 @@ const farmProduce = [
     location: "Eastern Farmlands",
     seller_rating: 4.9,
     is_organic: true,
-    seller_id: "4"
+    seller_id: "4",
+    order: 4
   }
 ];
 
-// Sample data for featured products
+// Sample data for featured products with custom order property
 const featuredProducts = [
   {
     id: "1",
@@ -69,7 +72,8 @@ const featuredProducts = [
     location: "Northeastern Hills",
     seller_rating: 4.8,
     isFeatured: true,
-    seller_id: "5"
+    seller_id: "5",
+    order: 3
   },
   {
     id: "2",
@@ -80,7 +84,8 @@ const featuredProducts = [
     location: "Western Highlands",
     seller_rating: 4.9,
     is_organic: true,
-    seller_id: "6"
+    seller_id: "6",
+    order: 1
   },
   {
     id: "3",
@@ -90,7 +95,8 @@ const featuredProducts = [
     seller_name: "Traditional Potters",
     location: "Southern Valley",
     seller_rating: 4.7,
-    seller_id: "7"
+    seller_id: "7",
+    order: 4
   },
   {
     id: "4",
@@ -101,46 +107,18 @@ const featuredProducts = [
     location: "Northern Mountains",
     seller_rating: 4.6,
     isFeatured: true,
-    seller_id: "8"
-  }
-];
-
-// Sample data for featured artisans
-const featuredArtisans = [
-  {
-    id: 1,
-    name: "Maya Johnson",
-    image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&auto=format&fit=crop",
-    profession: "Basket Weaver",
-    location: "Northeastern Hills",
-    rating: 4.8,
-    productCount: 24,
-    isVerified: true
-  },
-  {
-    id: 2,
-    name: "Samuel Green",
-    image: "https://images.unsplash.com/photo-1522556189639-b150ed9c4330?w=200&h=200&auto=format&fit=crop",
-    profession: "Honey Producer",
-    location: "Western Highlands",
-    rating: 4.9,
-    productCount: 8,
-    isVerified: true
-  },
-  {
-    id: 3,
-    name: "Amara Singh",
-    image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=200&h=200&auto=format&fit=crop",
-    profession: "Potter",
-    location: "Southern Valley",
-    rating: 4.7,
-    productCount: 36
+    seller_id: "8",
+    order: 2
   }
 ];
 
 const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  
+  // Sort products by custom order property
+  const sortedFeaturedProducts = [...featuredProducts].sort((a, b) => a.order - b.order);
+  const sortedFarmProduce = [...farmProduce].sort((a, b) => a.order - b.order);
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -166,7 +144,7 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => (
+              {sortedFeaturedProducts.map((product) => (
                 <ProductCard key={product.id} {...product} />
               ))}
             </div>
@@ -215,28 +193,6 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Featured Artisans */}
-        <section className="py-12">
-          <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold">Featured Artisans & Farmers</h2>
-              <Button 
-                variant="link" 
-                className="flex items-center text-primary"
-                onClick={() => navigate("/artisans")}
-              >
-                View All <ArrowRight size={16} className="ml-1" />
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {featuredArtisans.map((artisan) => (
-                <ArtisanCard key={artisan.id} {...artisan} />
-              ))}
-            </div>
-          </div>
-        </section>
-        
         {/* Farm Fresh Products */}
         <section className="py-12 bg-secondary/50">
           <div className="container mx-auto px-4">
@@ -252,7 +208,7 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {farmProduce.map((product) => (
+              {sortedFarmProduce.map((product) => (
                 <ProductCard key={product.id} {...product} />
               ))}
             </div>

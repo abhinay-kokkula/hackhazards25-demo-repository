@@ -1,797 +1,757 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+
+import React, { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "sonner";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { toast } from "@/components/ui/sonner";
+import { useNavigate } from "react-router-dom";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { 
-  Package, 
-  ShoppingBag, 
-  Users, 
-  Settings, 
-  PlusCircle, 
-  Trash2, 
-  Edit, 
-  ImagePlus, 
-  X, 
-  Check, 
-  AlertCircle,
-  ChevronRight,
-  Star
+  BarChart, Package2, ShoppingBag, Settings, Users, PlusCircle, 
+  Trash2, Edit, CheckCircle2, XCircle, ArrowUpDown, ExternalLink
 } from "lucide-react";
+import { 
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { ProductWithSellerInfo } from "@/types";
+import { useAuth } from "@/components/AuthProvider";
+
+// Mock product data (replace with actual data fetch from API in a real implementation)
+const mockProducts = [
+  {
+    id: "p1",
+    name: "Handwoven Bamboo Basket",
+    price: 45.99,
+    category: "Handcrafted",
+    status: "active",
+    inventory: 15,
+    image: "https://images.unsplash.com/photo-1590422749897-47036da0b0ff?w=800&auto=format&fit=crop"
+  },
+  {
+    id: "p2",
+    name: "Clay Pottery Set",
+    price: 89.99,
+    category: "Traditional Art",
+    status: "active",
+    inventory: 8,
+    image: "https://images.unsplash.com/photo-1565193298442-2373bcb29cd4?w=800&auto=format&fit=crop"
+  },
+  {
+    id: "p3",
+    name: "Organic Mountain Honey",
+    price: 12.50,
+    category: "Farm Fresh",
+    status: "out_of_stock",
+    inventory: 0,
+    image: "https://images.unsplash.com/photo-1587049633312-d628ae50a8ae?w=800&auto=format&fit=crop"
+  }
+];
+
+// Mock order data
+const mockOrders = [
+  {
+    id: "ord-001",
+    date: "2023-11-05",
+    customer: "John Smith",
+    items: [{ productId: "p1", name: "Handwoven Bamboo Basket", quantity: 2 }],
+    total: 91.98,
+    status: "delivered"
+  },
+  {
+    id: "ord-002",
+    date: "2023-11-03",
+    customer: "Emily Johnson",
+    items: [{ productId: "p2", name: "Clay Pottery Set", quantity: 1 }],
+    total: 89.99,
+    status: "shipped"
+  },
+  {
+    id: "ord-003",
+    date: "2023-11-01",
+    customer: "Michael Brown",
+    items: [
+      { productId: "p1", name: "Handwoven Bamboo Basket", quantity: 1 },
+      { productId: "p3", name: "Organic Mountain Honey", quantity: 3 }
+    ],
+    total: 83.49,
+    status: "processing"
+  }
+];
+
+// Define the forms using Zod schemas
+const productSchema = z.object({
+  name: z.string().min(3, { message: "Product name must be at least 3 characters" }),
+  price: z.coerce.number().positive({ message: "Price must be a positive number" }),
+  category: z.string().min(1, { message: "Please select a category" }),
+  description: z.string().optional(),
+  inventory: z.coerce.number().int().nonnegative({ message: "Inventory must be a non-negative integer" }),
+  is_organic: z.boolean().optional(),
+});
+
+// Use a simpler type definition to avoid the excessive depth error
+type ProductFormValues = z.infer<typeof productSchema>;
+
+// Mock categories
+const categories = ["Handcrafted", "Farm Fresh", "Traditional Art", "Home Goods", "Textiles", "Local Foods"];
 
 const SellerDashboard = () => {
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Product form state
-  const [newProduct, setNewProduct] = useState({
-    name: "",
-    price: "",
-    description: "",
-    category: "",
-    location: "",
-    is_organic: false
+  const [activeTab, setActiveTab] = useState("overview");
+  const [products, setProducts] = useState(mockProducts);
+  const [orders, setOrders] = useState(mockOrders);
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<null | { id: string } & ProductFormValues>(null);
+  const [orderFilter, setOrderFilter] = useState("all");
+
+  const productForm = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: "",
+      price: 0,
+      category: "",
+      description: "",
+      inventory: 0,
+      is_organic: false,
+    },
   });
-  const [productImages, setProductImages] = useState<string[]>([]);
-  const [imageUploadLoading, setImageUploadLoading] = useState(false);
-  
-  // Profile form state
-  const [profileForm, setProfileForm] = useState({
-    full_name: "",
-    location: "",
-    bio: ""
-  });
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarUploading, setAvatarUploading] = useState(false);
-  
-  // Fetch user data on mount
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          navigate("/login");
-          return;
-        }
-        
-        setUser(user);
-        
-        // Fetch seller profile
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (profileError && profileError.code !== 'PGRST116') {
-          console.error("Error fetching profile:", profileError);
-          toast.error("Failed to load profile data");
-        }
-        
-        if (profileData) {
-          setProfile(profileData);
-          setProfileForm({
-            full_name: profileData.full_name || "",
-            location: profileData.location || "",
-            bio: profileData.bio || ""
-          });
-          setAvatarUrl(profileData.avatar_url);
-        }
-        
-        // Fetch seller products
-        const { data: productsData, error: productsError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('seller_id', user.id);
-          
-        if (productsError) {
-          console.error("Error fetching products:", productsError);
-          toast.error("Failed to load products");
-        } else {
-          setProducts(productsData || []);
-        }
-        
-        // Fetch orders (simplified - in a real app, this would be more complex)
-        const { data: ordersData, error: ordersError } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('seller_id', user.id);
-          
-        if (ordersError) {
-          console.error("Error fetching orders:", ordersError);
-        } else {
-          setOrders(ordersData || []);
-        }
-        
-      } catch (error) {
-        console.error("Error in fetchUserData:", error);
-        toast.error("Failed to load dashboard data");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchUserData();
-  }, [navigate]);
-  
-  // Handle product image upload
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      return;
-    }
-    
-    const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `product-images/${fileName}`;
-    
-    setImageUploadLoading(true);
-    
-    try {
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file);
-        
-      if (uploadError) {
-        throw uploadError;
-      }
-      
-      const { data } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
-        
-      setProductImages([...productImages, data.publicUrl]);
-      toast.success("Image uploaded successfully");
-      
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      toast.error("Failed to upload image");
-    } finally {
-      setImageUploadLoading(false);
-    }
-  };
-  
-  // Remove image from product images
-  const removeImage = (image: string) => {
-    if (Array.isArray(productImages) && productImages.some(img => img === image)) {
-      setProductImages(productImages.filter(img => img !== image));
-    }
-  };
-  
-  // Handle avatar upload
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      return;
-    }
-    
-    const file = e.target.files[0];
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
-    
-    setAvatarUploading(true);
-    
-    try {
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, { upsert: true });
-        
-      if (uploadError) {
-        throw uploadError;
-      }
-      
-      const { data } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath);
-        
-      setAvatarUrl(data.publicUrl);
-      
-      // Update profile with new avatar URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: data.publicUrl })
-        .eq('id', user.id);
-        
-      if (updateError) {
-        throw updateError;
-      }
-      
-      toast.success("Profile picture updated");
-      
-    } catch (error) {
-      console.error("Error uploading avatar:", error);
-      toast.error("Failed to update profile picture");
-    } finally {
-      setAvatarUploading(false);
-    }
-  };
-  
-  // Handle product form submission
-  const handleProductSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!newProduct.name || !newProduct.price) {
-      toast.error("Product name and price are required");
-      return;
-    }
-    
-    try {
-      const productData = {
-        name: newProduct.name,
-        price: parseFloat(newProduct.price),
-        description: newProduct.description,
-        category: newProduct.category.toLowerCase().replace(/\s+/g, ''),
-        location: newProduct.location || profile?.location,
-        is_organic: newProduct.is_organic,
-        seller_id: user.id,
-        images: productImages
-      };
-      
-      const { data, error } = await supabase
-        .from('products')
-        .insert(productData)
-        .select();
-        
-      if (error) {
-        throw error;
-      }
-      
-      // Reset form
-      setNewProduct({
-        name: "",
-        price: "",
+    if (editingProduct) {
+      productForm.reset({
+        name: editingProduct.name,
+        price: editingProduct.price,
+        category: editingProduct.category,
+        inventory: editingProduct.inventory,
         description: "",
-        category: "",
-        location: "",
-        is_organic: false
+        is_organic: false,
       });
-      setProductImages([]);
-      
-      // Update products list
-      setProducts([...products, data[0]]);
-      
+    }
+  }, [editingProduct, productForm]);
+
+  const handleSubmitProduct = (data: ProductFormValues) => {
+    if (editingProduct) {
+      // Update existing product
+      setProducts(products.map(p => 
+        p.id === editingProduct.id ? { ...p, ...data } : p
+      ));
+      toast.success("Product updated successfully");
+    } else {
+      // Add new product
+      const newProduct = {
+        id: `p${products.length + 1}`,
+        ...data,
+        status: data.inventory > 0 ? "active" : "out_of_stock",
+        image: "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&auto=format&fit=crop",
+      };
+      setProducts([...products, newProduct]);
       toast.success("Product added successfully");
-      
-    } catch (error) {
-      console.error("Error adding product:", error);
-      toast.error("Failed to add product");
-    }
-  };
-  
-  // Handle profile form submission
-  const handleProfileSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: profileForm.full_name,
-          location: profileForm.location,
-          bio: profileForm.bio
-        })
-        .eq('id', user.id);
-        
-      if (error) {
-        throw error;
-      }
-      
-      // Update local profile state
-      setProfile({
-        ...profile,
-        full_name: profileForm.full_name,
-        location: profileForm.location,
-        bio: profileForm.bio
-      });
-      
-      toast.success("Profile updated successfully");
-      
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast.error("Failed to update profile");
-    }
-  };
-  
-  // Handle product deletion
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) {
-      return;
     }
     
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
-        
-      if (error) {
-        throw error;
-      }
-      
-      // Update products list
-      setProducts(products.filter(product => product.id !== productId));
-      
-      toast.success("Product deleted successfully");
-      
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      toast.error("Failed to delete product");
-    }
+    productForm.reset();
+    setIsAddProductOpen(false);
+    setEditingProduct(null);
   };
-  
-  // Handle view product details
-  const handleViewProduct = (id: string) => {
-    navigate(`/product/${id}`);
+
+  const openEditModal = (product: any) => {
+    setEditingProduct(product);
+    setIsAddProductOpen(true);
   };
-  
-  // Handle view order details
-  const handleViewOrder = (orderId: string) => {
-    navigate(`/order/${orderId}`);
+
+  const deleteProduct = (id: string) => {
+    setProducts(products.filter(p => p.id !== id));
+    toast.success("Product deleted");
   };
-  
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-  
+
+  const filteredOrders = orderFilter === "all" 
+    ? orders
+    : orders.filter(order => order.status === orderFilter);
+
+  const handleAddProductClick = () => {
+    productForm.reset({
+      name: "",
+      price: 0,
+      category: "",
+      description: "",
+      inventory: 0,
+      is_organic: false,
+    });
+    setEditingProduct(null);
+    setIsAddProductOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <main className="flex-1 bg-accent/5">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Sidebar */}
-            <div className="md:w-1/4">
+      <div className="flex-1 container mx-auto px-4 py-8">
+        {/* Dashboard Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Seller Dashboard</h1>
+            <p className="text-muted-foreground">Manage your rural products and orders</p>
+          </div>
+          <Button onClick={handleAddProductClick} className="mt-4 md:mt-0">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add New Product
+          </Button>
+        </div>
+        
+        {/* Dashboard Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
+          <TabsList className="grid grid-cols-4 md:grid-cols-5 lg:w-[600px]">
+            <TabsTrigger value="overview" className="text-xs md:text-sm">
+              <BarChart className="w-4 h-4 mr-2 hidden sm:block" />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger value="products" className="text-xs md:text-sm">
+              <Package2 className="w-4 h-4 mr-2 hidden sm:block" />
+              Products
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="text-xs md:text-sm">
+              <ShoppingBag className="w-4 h-4 mr-2 hidden sm:block" />
+              Orders
+            </TabsTrigger>
+            <TabsTrigger value="customers" className="text-xs md:text-sm">
+              <Users className="w-4 h-4 mr-2 hidden sm:block" />
+              Customers
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs md:text-sm hidden md:flex">
+              <Settings className="w-4 h-4 mr-2 hidden sm:block" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Overview Tab Content */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <Card>
-                <CardHeader>
-                  <div className="flex flex-col items-center">
-                    <div className="relative mb-4">
-                      <Avatar className="w-24 h-24">
-                        <AvatarImage src={avatarUrl || ""} />
-                        <AvatarFallback>{profile?.full_name?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <label 
-                        htmlFor="avatar-upload" 
-                        className="absolute bottom-0 right-0 bg-primary text-white p-1 rounded-full cursor-pointer"
-                      >
-                        <ImagePlus size={16} />
-                      </label>
-                      <input 
-                        id="avatar-upload" 
-                        type="file" 
-                        accept="image/*" 
-                        className="hidden" 
-                        onChange={handleAvatarUpload}
-                        disabled={avatarUploading}
-                      />
-                    </div>
-                    <CardTitle>{profile?.full_name || "Seller"}</CardTitle>
-                    <CardDescription>{user?.email}</CardDescription>
-                    
-                    {profile?.location && (
-                      <Badge variant="outline" className="mt-2">
-                        {profile.location}
-                      </Badge>
-                    )}
-                  </div>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Products</span>
-                      <span className="font-medium">{products.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Orders</span>
-                      <span className="font-medium">{orders.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Rating</span>
-                      <span className="font-medium flex items-center">
-                        {profile?.rating || "N/A"} 
-                        {profile?.rating && <Star size={14} fill="currentColor" className="ml-1 text-amber-500" />}
-                      </span>
-                    </div>
-                  </div>
+                  <div className="text-2xl font-bold">₹4,230.89</div>
+                  <p className="text-xs text-muted-foreground mt-1">+20.1% from last month</p>
                 </CardContent>
-                <CardFooter>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => navigate(`/seller/${user.id}`)}
-                  >
-                    View Public Profile
-                  </Button>
-                </CardFooter>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Orders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">+12</div>
+                  <p className="text-xs text-muted-foreground mt-1">+8% from last month</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Products</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{products.length}</div>
+                  <p className="text-xs text-muted-foreground mt-1">+2 new products</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">+24</div>
+                  <p className="text-xs text-muted-foreground mt-1">+12% from last month</p>
+                </CardContent>
               </Card>
             </div>
             
-            {/* Main Content */}
-            <div className="md:w-3/4">
-              <Tabs defaultValue="products">
-                <TabsList className="w-full">
-                  <TabsTrigger value="products" className="flex-1">
-                    <Package size={16} className="mr-2" /> Products
-                  </TabsTrigger>
-                  <TabsTrigger value="orders" className="flex-1">
-                    <ShoppingBag size={16} className="mr-2" /> Orders
-                  </TabsTrigger>
-                  <TabsTrigger value="customers" className="flex-1">
-                    <Users size={16} className="mr-2" /> Customers
-                  </TabsTrigger>
-                  <TabsTrigger value="settings" className="flex-1">
-                    <Settings size={16} className="mr-2" /> Settings
-                  </TabsTrigger>
-                </TabsList>
-                
-                {/* Products Tab */}
-                <TabsContent value="products">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Manage Products</CardTitle>
-                      <CardDescription>Add, edit or remove your products</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-6">
-                        {/* Add New Product Form */}
-                        <div className="bg-accent/10 rounded-lg p-4">
-                          <h3 className="text-lg font-medium mb-4">Add New Product</h3>
-                          <form onSubmit={handleProductSubmit}>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="product-name">Product Name *</Label>
-                                <Input 
-                                  id="product-name" 
-                                  value={newProduct.name}
-                                  onChange={(e) => setNewProduct({...newProduct, name: e.target.value})}
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="product-price">Price (USD) *</Label>
-                                <Input 
-                                  id="product-price" 
-                                  type="number" 
-                                  min="0.01" 
-                                  step="0.01"
-                                  value={newProduct.price}
-                                  onChange={(e) => setNewProduct({...newProduct, price: e.target.value})}
-                                  required
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="product-category">Category</Label>
-                                <Select 
-                                  value={newProduct.category} 
-                                  onValueChange={(value) => setNewProduct({...newProduct, category: value})}
-                                >
-                                  <SelectTrigger id="product-category">
-                                    <SelectValue placeholder="Select category" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="handcrafted">Handcrafted</SelectItem>
-                                    <SelectItem value="farmfresh">Farm Fresh</SelectItem>
-                                    <SelectItem value="traditionalart">Traditional Art</SelectItem>
-                                    <SelectItem value="homegoods">Home Goods</SelectItem>
-                                    <SelectItem value="textiles">Textiles</SelectItem>
-                                    <SelectItem value="localfoods">Local Foods</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="product-location">Location</Label>
-                                <Input 
-                                  id="product-location" 
-                                  value={newProduct.location}
-                                  onChange={(e) => setNewProduct({...newProduct, location: e.target.value})}
-                                  placeholder={profile?.location || ""}
-                                />
-                              </div>
-                              <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="product-description">Description</Label>
-                                <Textarea 
-                                  id="product-description" 
-                                  rows={4}
-                                  value={newProduct.description}
-                                  onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
-                                />
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <Switch 
-                                  id="is-organic"
-                                  checked={newProduct.is_organic}
-                                  onCheckedChange={(checked) => setNewProduct({...newProduct, is_organic: checked})}
-                                />
-                                <Label htmlFor="is-organic">Organic Product</Label>
-                              </div>
-                            </div>
-                            
-                            {/* Image Upload */}
-                            <div className="space-y-2 mb-4">
-                              <Label>Product Images</Label>
-                              <div className="flex flex-wrap gap-2 mb-2">
-                                {productImages.map((image, index) => (
-                                  <div key={index} className="relative w-20 h-20 rounded border">
-                                    <img 
-                                      src={image} 
-                                      alt={`Product ${index + 1}`} 
-                                      className="w-full h-full object-cover rounded"
-                                    />
-                                    <button
-                                      type="button"
-                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                                      onClick={() => removeImage(image)}
-                                    >
-                                      <X size={12} />
-                                    </button>
-                                  </div>
-                                ))}
-                                <label className="w-20 h-20 border-2 border-dashed rounded flex items-center justify-center cursor-pointer hover:bg-accent/5">
-                                  <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    className="hidden" 
-                                    onChange={handleImageUpload}
-                                    disabled={imageUploadLoading}
-                                  />
-                                  {imageUploadLoading ? (
-                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
-                                  ) : (
-                                    <PlusCircle size={24} className="text-muted-foreground" />
-                                  )}
-                                </label>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                Upload up to 5 images. First image will be the main product image.
-                              </p>
-                            </div>
-                            
-                            <Button type="submit" className="w-full">
-                              <PlusCircle size={16} className="mr-2" /> Add Product
-                            </Button>
-                          </form>
-                        </div>
-                        
-                        {/* Product List */}
-                        <div>
-                          <h3 className="text-lg font-medium mb-4">Your Products</h3>
-                          {products.length === 0 ? (
-                            <div className="text-center py-8 bg-accent/5 rounded-lg">
-                              <p className="text-muted-foreground">You haven't added any products yet.</p>
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              {products.map((product) => (
-                                <div 
-                                  key={product.id} 
-                                  className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-white rounded-lg shadow-sm"
-                                >
-                                  <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0">
-                                    <img 
-                                      src={product.images?.[0] || "https://via.placeholder.com/150"} 
-                                      alt={product.name} 
-                                      className="w-full h-full object-cover"
-                                    />
-                                  </div>
-                                  <div className="flex-1">
-                                    <h4 className="font-medium">{product.name}</h4>
-                                    <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                                      <span>${product.price.toFixed(2)}</span>
-                                      {product.category && (
-                                        <>
-                                          <span>•</span>
-                                          <span>{product.category}</span>
-                                        </>
-                                      )}
-                                      {product.is_organic && (
-                                        <>
-                                          <span>•</span>
-                                          <Badge variant="outline" className="text-xs">Organic</Badge>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2 self-end sm:self-center">
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      onClick={() => handleViewProduct(product.id)}
-                                    >
-                                      View
-                                    </Button>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                    >
-                                      <Edit size={14} />
-                                    </Button>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      onClick={() => handleDeleteProduct(product.id)}
-                                    >
-                                      <Trash2 size={14} />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                {/* Orders Tab */}
-                <TabsContent value="orders">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Orders</CardTitle>
-                      <CardDescription>Manage your customer orders</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {orders.length === 0 ? (
-                        <div className="text-center py-8 bg-accent/5 rounded-lg">
-                          <p className="text-muted-foreground">You don't have any orders yet.</p>
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {orders.map((order) => (
-                            <div 
-                              key={order.id} 
-                              className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-white rounded-lg shadow-sm"
-                            >
-                              <div className="flex-1">
-                                <div className="flex justify-between mb-2">
-                                  <h4 className="font-medium">Order #{order.id.substring(0, 8)}</h4>
-                                  <Badge 
-                                    variant={order.status === "completed" ? "default" : "outline"}
-                                  >
-                                    {order.status}
-                                  </Badge>
-                                </div>
-                                <div className="flex flex-wrap gap-2 text-sm text-muted-foreground">
-                                  <span>${order.total_amount.toFixed(2)}</span>
-                                  <span>•</span>
-                                  <span>{new Date(order.created_at).toLocaleDateString()}</span>
-                                  <span>•</span>
-                                  <span>{Array.isArray(order.items) ? order.items.length : 0} items</span>
-                                </div>
-                              </div>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleViewOrder(order.id)}
-                              >
-                                Details <ChevronRight size={14} className="ml-1" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                {/* Customers Tab */}
-                <TabsContent value="customers">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Customers</CardTitle>
-                      <CardDescription>View and manage your customer relationships</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-center py-8 bg-accent/5 rounded-lg">
-                        <p className="text-muted-foreground">Customer management coming soon.</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-                
-                {/* Settings Tab */}
-                <TabsContent value="settings">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Profile Settings</CardTitle>
-                      <CardDescription>Update your seller profile information</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <form onSubmit={handleProfileSubmit} className="space-y-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="full-name">Full Name</Label>
-                          <Input 
-                            id="full-name" 
-                            value={profileForm.full_name}
-                            onChange={(e) => setProfileForm({...profileForm, full_name: e.target.value})}
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+              <Card className="lg:col-span-4">
+                <CardHeader>
+                  <CardTitle>Recent Sales</CardTitle>
+                  <CardDescription>
+                    Your most recent orders.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Order</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {orders.slice(0, 5).map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell>{order.id}</TableCell>
+                          <TableCell>{order.customer}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              order.status === "delivered" ? "default" : 
+                              order.status === "shipped" ? "secondary" : 
+                              "outline"
+                            }>
+                              {order.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle>Popular Products</CardTitle>
+                  <CardDescription>
+                    Your best selling products this month.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {products.slice(0, 3).map((product) => (
+                      <div key={product.id} className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded border bg-background flex-shrink-0 overflow-hidden">
+                          <img 
+                            src={product.image} 
+                            alt={product.name}
+                            className="h-full w-full object-cover" 
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="location">Location</Label>
-                          <Input 
-                            id="location" 
-                            value={profileForm.location}
-                            onChange={(e) => setProfileForm({...profileForm, location: e.target.value})}
-                          />
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">{product.name}</p>
+                          <p className="text-sm text-muted-foreground">{product.category}</p>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="bio">Bio</Label>
-                          <Textarea 
-                            id="bio" 
-                            rows={4}
-                            value={profileForm.bio}
-                            onChange={(e) => setProfileForm({...profileForm, bio: e.target.value})}
-                            placeholder="Tell customers about yourself and your products..."
-                          />
-                        </div>
-                        <Button type="submit">
-                          Save Changes
-                        </Button>
-                      </form>
-                      
-                      <Separator className="my-8" />
-                      
-                      <div>
-                        <h3 className="text-lg font-medium mb-4">Account Settings</h3>
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">Email Notifications</p>
-                              <p className="text-sm text-muted-foreground">Receive emails about orders and account updates</p>
-                            </div>
-                            <Switch defaultChecked />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">Public Profile</p>
-                              <p className="text-sm text-muted-foreground">Make your seller profile visible to customers</p>
-                            </div>
-                            <Switch defaultChecked />
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <AlertCircle size={16} className="text-red-500" />
-                              <p className="font-medium text-red-500">Delete Account</p>
-                            </div>
-                            <Button variant="destructive" size="sm">
-                              Delete
-                            </Button>
-                          </div>
-                        </div>
+                        <div className="font-medium">₹{product.price.toFixed(2)}</div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </div>
-        </div>
-      </main>
+          </TabsContent>
+          
+          {/* Products Tab Content */}
+          <TabsContent value="products" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Products</CardTitle>
+                <CardDescription>
+                  Manage your product listings.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Inventory</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.map((product) => (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded bg-background overflow-hidden">
+                              <img 
+                                src={product.image} 
+                                alt={product.name}
+                                className="h-full w-full object-cover" 
+                              />
+                            </div>
+                            {product.name}
+                          </div>
+                        </TableCell>
+                        <TableCell>{product.category}</TableCell>
+                        <TableCell>₹{product.price.toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge variant={product.status === "active" ? "default" : "secondary"}>
+                            {product.status === "active" ? "Active" : "Out of Stock"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{product.inventory}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <ArrowUpDown className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEditModal(product)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                window.open(`/product/${product.id}`, '_blank');
+                              }}>
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-red-600"
+                                onClick={() => deleteProduct(product.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Orders Tab Content */}
+          <TabsContent value="orders" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                  <div>
+                    <CardTitle>Orders</CardTitle>
+                    <CardDescription>
+                      Manage your customer orders.
+                    </CardDescription>
+                  </div>
+                  <Select value={orderFilter} onValueChange={setOrderFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Orders</SelectItem>
+                      <SelectItem value="processing">Processing</SelectItem>
+                      <SelectItem value="shipped">Shipped</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-medium">{order.id}</TableCell>
+                        <TableCell>{order.date}</TableCell>
+                        <TableCell>{order.customer}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            order.status === "delivered" ? "default" : 
+                            order.status === "shipped" ? "secondary" : 
+                            "outline"
+                          }>
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <ArrowUpDown className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                View Details
+                              </DropdownMenuItem>
+                              {order.status === "processing" && (
+                                <DropdownMenuItem>
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                                  Mark as Shipped
+                                </DropdownMenuItem>
+                              )}
+                              {order.status === "shipped" && (
+                                <DropdownMenuItem>
+                                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                                  Mark as Delivered
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem>
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Cancel Order
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Customers Tab Content */}
+          <TabsContent value="customers" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Customers</CardTitle>
+                <CardDescription>
+                  View your customer information.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  Customer management coming soon...
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Settings Tab Content */}
+          <TabsContent value="settings" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Settings</CardTitle>
+                <CardDescription>
+                  Manage your store profile and preferences.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">Profile Information</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Store Name</label>
+                      <Input placeholder="Your store name" defaultValue="Artisan Crafts" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Location</label>
+                      <Input placeholder="Your location" defaultValue="Northeastern Hills" />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <label className="text-sm font-medium">Store Description</label>
+                      <Textarea 
+                        placeholder="Describe your store" 
+                        defaultValue="We create handcrafted items using traditional techniques passed down through generations."
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">Payment Settings</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Bank Account Number</label>
+                      <Input placeholder="Your bank account number" defaultValue="XXXX-XXXX-XXXX-1234" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">UPI ID</label>
+                      <Input placeholder="Your UPI ID" defaultValue="artisan@ybl" />
+                    </div>
+                  </div>
+                </div>
+                
+                <Button>Save Changes</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        
+        {/* Add/Edit Product Dialog */}
+        <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
+              <DialogDescription>
+                {editingProduct 
+                  ? "Update your product details below."
+                  : "Fill in the details to add a new product to your store."
+                }
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...productForm}>
+              <form onSubmit={productForm.handleSubmit(handleSubmitProduct)} className="space-y-4">
+                <FormField
+                  control={productForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Product Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter product name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={productForm.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price (₹)</FormLabel>
+                        <FormControl>
+                          <Input type="number" step="0.01" min="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={productForm.control}
+                    name="inventory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Inventory</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={productForm.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a category" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={productForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Describe your product" 
+                          className="min-h-[100px]"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={productForm.control}
+                  name="is_organic"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <input
+                          type="checkbox"
+                          checked={field.value}
+                          onChange={field.onChange}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Organic Product</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Check this box if the product is certified organic.
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter>
+                  <Button type="submit">
+                    {editingProduct ? "Update Product" : "Add Product"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+      </div>
       
       <Footer />
     </div>
