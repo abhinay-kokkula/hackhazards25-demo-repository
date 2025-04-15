@@ -52,8 +52,19 @@ import { Badge } from "@/components/ui/badge";
 import { ProductWithSellerInfo } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
 
-// Mock product data (replace with actual data fetch from API in a real implementation)
-const mockProducts = [
+type ProductType = {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+  status: string;
+  inventory: number;
+  image: string;
+  description?: string;
+  is_organic?: boolean;
+};
+
+const mockProducts: ProductType[] = [
   {
     id: "p1",
     name: "Handwoven Bamboo Basket",
@@ -83,7 +94,6 @@ const mockProducts = [
   }
 ];
 
-// Mock order data
 const mockOrders = [
   {
     id: "ord-001",
@@ -114,7 +124,6 @@ const mockOrders = [
   }
 ];
 
-// Define the forms using Zod schemas
 const productSchema = z.object({
   name: z.string().min(3, { message: "Product name must be at least 3 characters" }),
   price: z.coerce.number().positive({ message: "Price must be a positive number" }),
@@ -124,20 +133,46 @@ const productSchema = z.object({
   is_organic: z.boolean().optional(),
 });
 
-// Use a simpler type definition to avoid the excessive depth error
 type ProductFormValues = z.infer<typeof productSchema>;
 
-// Mock categories
 const categories = ["Handcrafted", "Farm Fresh", "Traditional Art", "Home Goods", "Textiles", "Local Foods"];
 
 const SellerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
-  const [products, setProducts] = useState(mockProducts);
-  const [orders, setOrders] = useState(mockOrders);
+  const [products, setProducts] = useState<ProductType[]>(mockProducts);
+  const [orders, setOrders] = useState([
+    {
+      id: "ord-001",
+      date: "2023-11-05",
+      customer: "John Smith",
+      items: [{ productId: "p1", name: "Handwoven Bamboo Basket", quantity: 2 }],
+      total: 91.98,
+      status: "delivered"
+    },
+    {
+      id: "ord-002",
+      date: "2023-11-03",
+      customer: "Emily Johnson",
+      items: [{ productId: "p2", name: "Clay Pottery Set", quantity: 1 }],
+      total: 89.99,
+      status: "shipped"
+    },
+    {
+      id: "ord-003",
+      date: "2023-11-01",
+      customer: "Michael Brown",
+      items: [
+        { productId: "p1", name: "Handwoven Bamboo Basket", quantity: 1 },
+        { productId: "p3", name: "Organic Mountain Honey", quantity: 3 }
+      ],
+      total: 83.49,
+      status: "processing"
+    }
+  ]);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<null | { id: string } & ProductFormValues>(null);
+  const [editingProduct, setEditingProduct] = useState<null | ProductType>(null);
   const [orderFilter, setOrderFilter] = useState("all");
 
   const productForm = useForm<ProductFormValues>({
@@ -159,26 +194,32 @@ const SellerDashboard = () => {
         price: editingProduct.price,
         category: editingProduct.category,
         inventory: editingProduct.inventory,
-        description: "",
-        is_organic: false,
+        description: editingProduct.description || "",
+        is_organic: editingProduct.is_organic || false,
       });
     }
   }, [editingProduct, productForm]);
 
   const handleSubmitProduct = (data: ProductFormValues) => {
     if (editingProduct) {
-      // Update existing product
       setProducts(products.map(p => 
-        p.id === editingProduct.id ? { ...p, ...data } : p
+        p.id === editingProduct.id ? { 
+          ...p, 
+          ...data
+        } : p
       ));
       toast.success("Product updated successfully");
     } else {
-      // Add new product
-      const newProduct = {
+      const newProduct: ProductType = {
         id: `p${products.length + 1}`,
-        ...data,
+        name: data.name,
+        price: data.price,
+        category: data.category,
         status: data.inventory > 0 ? "active" : "out_of_stock",
+        inventory: data.inventory,
         image: "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&auto=format&fit=crop",
+        description: data.description,
+        is_organic: data.is_organic
       };
       setProducts([...products, newProduct]);
       toast.success("Product added successfully");
@@ -189,7 +230,7 @@ const SellerDashboard = () => {
     setEditingProduct(null);
   };
 
-  const openEditModal = (product: any) => {
+  const openEditModal = (product: ProductType) => {
     setEditingProduct(product);
     setIsAddProductOpen(true);
   };
@@ -216,29 +257,15 @@ const SellerDashboard = () => {
     setIsAddProductOpen(true);
   };
 
-  const getNewDraftProduct = () => {
-    return {
-      id: crypto.randomUUID(),
-      name: "",
-      price: 0,
-      category: "",
-      description: "",
-      status: "draft",
-      inventory: 0,
-      image: "https://images.unsplash.com/photo-1597484662317-c93a5ec51518?w=300"
-    };
-  };
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <div className="flex-1 container mx-auto px-4 py-8">
-        {/* Dashboard Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Seller Dashboard</h1>
-            <p className="text-muted-foreground">Manage your rural products and orders</p>
+            <p className="text-muted-foreground">Manage your rural products</p>
           </div>
           <Button onClick={handleAddProductClick} className="mt-4 md:mt-0">
             <PlusCircle className="mr-2 h-4 w-4" />
@@ -246,7 +273,6 @@ const SellerDashboard = () => {
           </Button>
         </div>
         
-        {/* Dashboard Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
           <TabsList className="grid grid-cols-4 md:grid-cols-5 lg:w-[600px]">
             <TabsTrigger value="overview" className="text-xs md:text-sm">
@@ -271,118 +297,111 @@ const SellerDashboard = () => {
             </TabsTrigger>
           </TabsList>
           
-          {/* Overview Tab Content */}
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">₹4,230.89</div>
-                  <p className="text-xs text-muted-foreground mt-1">+20.1% from last month</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Orders</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">+12</div>
-                  <p className="text-xs text-muted-foreground mt-1">+8% from last month</p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Products</CardTitle>
+                  <CardTitle className="text-sm font-medium">Your Products</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{products.length}</div>
-                  <p className="text-xs text-muted-foreground mt-1">+2 new products</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+                  <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">+24</div>
-                  <p className="text-xs text-muted-foreground mt-1">+12% from last month</p>
+                  <div className="text-2xl font-bold">
+                    {products.filter(p => p.status === "active").length}
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{orders.length}</div>
                 </CardContent>
               </Card>
             </div>
             
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-              <Card className="lg:col-span-4">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
                 <CardHeader>
-                  <CardTitle>Recent Sales</CardTitle>
-                  <CardDescription>
-                    Your most recent orders.
-                  </CardDescription>
+                  <CardTitle>Recent Orders</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Order</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orders.slice(0, 5).map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell>{order.id}</TableCell>
-                          <TableCell>{order.customer}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              order.status === "delivered" ? "default" : 
-                              order.status === "shipped" ? "secondary" : 
-                              "outline"
-                            }>
-                              {order.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
+                  {orders.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Order ID</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {orders.slice(0, 3).map((order) => (
+                          <TableRow key={order.id}>
+                            <TableCell>{order.id}</TableCell>
+                            <TableCell>
+                              <Badge variant={
+                                order.status === "delivered" ? "default" : 
+                                order.status === "shipped" ? "secondary" : 
+                                "outline"
+                              }>
+                                {order.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      No orders yet
+                    </div>
+                  )}
                 </CardContent>
               </Card>
-              <Card className="lg:col-span-3">
+              
+              <Card>
                 <CardHeader>
                   <CardTitle>Popular Products</CardTitle>
-                  <CardDescription>
-                    Your best selling products this month.
-                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {products.slice(0, 3).map((product) => (
-                      <div key={product.id} className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded border bg-background flex-shrink-0 overflow-hidden">
-                          <img 
-                            src={product.image} 
-                            alt={product.name}
-                            className="h-full w-full object-cover" 
-                          />
+                  {products.length > 0 ? (
+                    <div className="space-y-4">
+                      {products.slice(0, 3).map((product) => (
+                        <div key={product.id} className="flex items-center gap-4">
+                          <div className="h-12 w-12 rounded border bg-background flex-shrink-0 overflow-hidden">
+                            <img 
+                              src={product.image} 
+                              alt={product.name}
+                              className="h-full w-full object-cover" 
+                            />
+                          </div>
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium leading-none">{product.name}</p>
+                            <p className="text-sm text-muted-foreground">{product.category}</p>
+                          </div>
+                          <div className="font-medium">₹{product.price.toFixed(2)}</div>
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium leading-none">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">{product.category}</p>
-                        </div>
-                        <div className="font-medium">₹{product.price.toFixed(2)}</div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6 text-muted-foreground">
+                      No products added yet
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
           </TabsContent>
           
-          {/* Products Tab Content */}
           <TabsContent value="products" className="space-y-6">
             <Card>
               <CardHeader>
@@ -392,79 +411,85 @@ const SellerDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Product</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Inventory</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {products.map((product) => (
-                      <TableRow key={product.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded bg-background overflow-hidden">
-                              <img 
-                                src={product.image} 
-                                alt={product.name}
-                                className="h-full w-full object-cover" 
-                              />
-                            </div>
-                            {product.name}
-                          </div>
-                        </TableCell>
-                        <TableCell>{product.category}</TableCell>
-                        <TableCell>₹{product.price.toFixed(2)}</TableCell>
-                        <TableCell>
-                          <Badge variant={product.status === "active" ? "default" : "secondary"}>
-                            {product.status === "active" ? "Active" : "Out of Stock"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{product.inventory}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <ArrowUpDown className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEditModal(product)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => {
-                                window.open(`/product/${product.id}`, '_blank');
-                              }}>
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                View
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-red-600"
-                                onClick={() => deleteProduct(product.id)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                {products.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Inventory</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {products.map((product) => (
+                        <TableRow key={product.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded bg-background overflow-hidden">
+                                <img 
+                                  src={product.image} 
+                                  alt={product.name}
+                                  className="h-full w-full object-cover" 
+                                />
+                              </div>
+                              {product.name}
+                            </div>
+                          </TableCell>
+                          <TableCell>{product.category}</TableCell>
+                          <TableCell>₹{product.price.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Badge variant={product.status === "active" ? "default" : "secondary"}>
+                              {product.status === "active" ? "Active" : "Out of Stock"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{product.inventory}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <ArrowUpDown className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => openEditModal(product)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  window.open(`/product/${product.id}`, '_blank');
+                                }}>
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  View
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-red-600"
+                                  onClick={() => deleteProduct(product.id)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No products added yet</p>
+                    <Button onClick={handleAddProductClick}>Add Your First Product</Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
           
-          {/* Orders Tab Content */}
           <TabsContent value="orders" className="space-y-6">
             <Card>
               <CardHeader>
@@ -489,74 +514,79 @@ const SellerDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Order ID</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredOrders.map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
-                        <TableCell>{order.date}</TableCell>
-                        <TableCell>{order.customer}</TableCell>
-                        <TableCell>
-                          <Badge variant={
-                            order.status === "delivered" ? "default" : 
-                            order.status === "shipped" ? "secondary" : 
-                            "outline"
-                          }>
-                            {order.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <ArrowUpDown className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                View Details
-                              </DropdownMenuItem>
-                              {order.status === "processing" && (
-                                <DropdownMenuItem>
-                                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                                  Mark as Shipped
-                                </DropdownMenuItem>
-                              )}
-                              {order.status === "shipped" && (
-                                <DropdownMenuItem>
-                                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                                  Mark as Delivered
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem>
-                                <XCircle className="mr-2 h-4 w-4" />
-                                Cancel Order
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                {filteredOrders.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Order ID</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrders.map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">{order.id}</TableCell>
+                          <TableCell>{order.date}</TableCell>
+                          <TableCell>{order.customer}</TableCell>
+                          <TableCell>
+                            <Badge variant={
+                              order.status === "delivered" ? "default" : 
+                              order.status === "shipped" ? "secondary" : 
+                              "outline"
+                            }>
+                              {order.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" className="h-8 w-8 p-0">
+                                  <span className="sr-only">Open menu</span>
+                                  <ArrowUpDown className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>
+                                  <ExternalLink className="mr-2 h-4 w-4" />
+                                  View Details
+                                </DropdownMenuItem>
+                                {order.status === "processing" && (
+                                  <DropdownMenuItem>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Mark as Shipped
+                                  </DropdownMenuItem>
+                                )}
+                                {order.status === "shipped" && (
+                                  <DropdownMenuItem>
+                                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                                    Mark as Delivered
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem>
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Cancel Order
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No orders match your filter
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
           
-          {/* Customers Tab Content */}
           <TabsContent value="customers" className="space-y-6">
             <Card>
               <CardHeader>
@@ -573,7 +603,6 @@ const SellerDashboard = () => {
             </Card>
           </TabsContent>
           
-          {/* Settings Tab Content */}
           <TabsContent value="settings" className="space-y-6">
             <Card>
               <CardHeader>
@@ -625,7 +654,6 @@ const SellerDashboard = () => {
           </TabsContent>
         </Tabs>
         
-        {/* Add/Edit Product Dialog */}
         <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>

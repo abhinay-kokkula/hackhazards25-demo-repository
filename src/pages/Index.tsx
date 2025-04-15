@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Sample data for fresh produce with custom order property
 const farmProduce = [
@@ -115,6 +116,7 @@ const featuredProducts = [
 const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
   // Sort products by custom order property
   const sortedFeaturedProducts = [...featuredProducts].sort((a, b) => a.order - b.order);
@@ -130,16 +132,16 @@ const Index = () => {
         <CategorySection />
         
         {/* Featured Products */}
-        <section className="py-12">
+        <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold">Featured Products</h2>
+              <h2 className="text-3xl font-bold">{t('featuredProducts')}</h2>
               <Button 
                 variant="link" 
                 className="flex items-center text-primary"
                 onClick={() => navigate("/browse")}
               >
-                View All <ArrowRight size={16} className="ml-1" />
+                {t('viewAll')} <ArrowRight size={16} className="ml-1" />
               </Button>
             </div>
             
@@ -152,29 +154,27 @@ const Index = () => {
         </section>
         
         {/* Impact Banner */}
-        <section className="py-12 bg-gradient-to-r from-accent/20 to-primary/20">
+        <section className="py-16 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="md:w-1/2">
-                  <h2 className="text-3xl font-bold mb-4">Direct Impact on Rural Communities</h2>
-                  <p className="text-muted-foreground mb-6">
-                    Every purchase you make directly supports rural artisans and farmers. 
-                    By eliminating middlemen, more money goes back into local communities,
-                    helping preserve traditional crafts and sustainable farming practices.
+                  <h2 className="text-3xl font-bold mb-4">{t('impactTitle')}</h2>
+                  <p className="text-muted-foreground mb-8">
+                    {t('impactDescription')}
                   </p>
                   <div className="flex flex-wrap gap-4">
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center">
+                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center hover:shadow-md transition-shadow">
                       <div className="text-3xl font-bold text-primary mb-2">87%</div>
-                      <div className="text-sm text-muted-foreground">Goes to Producers</div>
+                      <div className="text-sm text-muted-foreground">{t('goesToProducers')}</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center">
+                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center hover:shadow-md transition-shadow">
                       <div className="text-3xl font-bold text-primary mb-2">175+</div>
-                      <div className="text-sm text-muted-foreground">Rural Communities</div>
+                      <div className="text-sm text-muted-foreground">{t('ruralCommunities')}</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center">
+                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center hover:shadow-md transition-shadow">
                       <div className="text-3xl font-bold text-primary mb-2">12K+</div>
-                      <div className="text-sm text-muted-foreground">Direct Livelihoods</div>
+                      <div className="text-sm text-muted-foreground">{t('directLivelihoods')}</div>
                     </div>
                   </div>
                 </div>
@@ -194,16 +194,16 @@ const Index = () => {
         </section>
         
         {/* Farm Fresh Products */}
-        <section className="py-12 bg-secondary/50">
+        <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold">Farm Fresh Produce</h2>
+              <h2 className="text-3xl font-bold">{t('farmFreshProduce')}</h2>
               <Button 
                 variant="link" 
                 className="flex items-center text-primary"
                 onClick={() => navigate("/browse/Farm%20Fresh")}
               >
-                View All <ArrowRight size={16} className="ml-1" />
+                {t('viewAll')} <ArrowRight size={16} className="ml-1" />
               </Button>
             </div>
             
@@ -216,22 +216,21 @@ const Index = () => {
         </section>
         
         {/* CTA Section */}
-        <section className="py-16 bg-gradient-to-r from-primary to-accent">
+        <section className="py-20 bg-gradient-to-r from-primary to-accent">
           <div className="container mx-auto px-4 text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">Ready to Share Your Rural Crafts?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('readyToShare')}</h2>
             <p className="text-white/90 max-w-xl mx-auto mb-8">
-              Join our community of artisans and farmers connecting directly with customers worldwide.
-              No technical expertise needed - we'll help you every step of the way.
+              {t('joinCommunity')}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button 
                 className="bg-white text-primary hover:bg-white/90 px-8 py-6 text-lg"
                 onClick={() => navigate("/seller")}
               >
-                Become a Seller
+                {t('becomeSeller')}
               </Button>
               <Button variant="outline" className="border-white text-white hover:bg-white/20 px-8 py-6 text-lg">
-                Learn More
+                {t('learnMore')}
               </Button>
             </div>
           </div>

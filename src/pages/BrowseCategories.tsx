@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // All categories available in the application
 const allCategories = [
@@ -49,6 +50,7 @@ const BrowseCategories = () => {
   const { category: categoryParam } = useParams<{ category?: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryParam || null);
+  const { t } = useLanguage();
   
   // Fetch products from Supabase
   const { data: products, isLoading, error } = useQuery({
@@ -127,19 +129,17 @@ const BrowseCategories = () => {
     }
   };
 
-  // Language translations are now handled in the navbar component
-
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
       <main className="flex-1">
         {/* Hero section with search */}
-        <div className="bg-accent/10 py-8">
+        <div className="bg-gradient-to-r from-primary/5 via-accent/5 to-background py-8">
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
-                <h1 className="text-3xl font-bold">{selectedCategory || "Browse All Categories"}</h1>
+                <h1 className="text-3xl font-bold">{selectedCategory || t('browseAllCategories')}</h1>
                 <div className="flex items-center text-sm text-muted-foreground mt-1">
                   <Link to="/" className="hover:text-primary">Home</Link>
                   <ChevronRight size={14} className="mx-1" />
@@ -159,7 +159,7 @@ const BrowseCategories = () => {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input 
                     type="search" 
-                    placeholder="Search products..."
+                    placeholder={t('searchProducts')}
                     className="pl-10 w-full md:w-64 lg:w-80"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -178,7 +178,7 @@ const BrowseCategories = () => {
               className="rounded-full"
               onClick={() => handleCategorySelect(null)}
             >
-              All Categories
+              {t('allCategories')}
             </Button>
             
             {allCategories.map((category) => (
@@ -232,14 +232,14 @@ const BrowseCategories = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <p className="text-lg text-muted-foreground">No products found</p>
+              <p className="text-lg text-muted-foreground">{t('noProductsFound')}</p>
               {selectedCategory && (
                 <Button 
                   variant="outline" 
                   className="mt-4"
                   onClick={() => handleCategorySelect(null)}
                 >
-                  View all categories
+                  {t('viewAllCategories')}
                 </Button>
               )}
             </div>

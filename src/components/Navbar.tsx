@@ -9,6 +9,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from './AuthProvider';
 import { useCart } from './CartProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,11 +38,11 @@ const languages: { code: SupportedLanguage; name: string }[] = [
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [language, setLanguage] = useState<SupportedLanguage>("en");
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { totalItems } = useCart();
+  const { language, setLanguage, t } = useLanguage();
   
   const handleSignOut = async () => {
     try {
@@ -63,8 +64,6 @@ const Navbar = () => {
   
   const handleLanguageChange = (value: string) => {
     setLanguage(value as SupportedLanguage);
-    // Here you would typically update some global language state
-    // or use a translation context to change the app language
   };
 
   return (
@@ -87,7 +86,7 @@ const Navbar = () => {
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input 
                     type="search" 
-                    placeholder="Search for products, artisans, or farms..." 
+                    placeholder={t('search')}
                     className="pl-9 pr-4 py-2 w-full"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -100,7 +99,9 @@ const Navbar = () => {
           {/* Nav links - visible on desktop */}
           {!isMobile && (
             <div className="hidden md:flex items-center space-x-6">
-              <Link to="/browse" className="text-foreground hover:text-primary transition-colors">Shop</Link>
+              <Link to="/browse" className="text-foreground hover:text-primary transition-colors">
+                {t('shop')}
+              </Link>
               
               {/* Language Selector */}
               <div className="relative flex items-center">
@@ -119,8 +120,12 @@ const Navbar = () => {
                 </Select>
               </div>
               
-              <Link to="/" className="text-foreground hover:text-primary transition-colors">About</Link>
-              <Link to="/seller" className="text-foreground hover:text-primary transition-colors">Sell</Link>
+              <Link to="/" className="text-foreground hover:text-primary transition-colors">
+                {t('about')}
+              </Link>
+              <Link to="/seller" className="text-foreground hover:text-primary transition-colors">
+                {t('sell')}
+              </Link>
             </div>
           )}
           
@@ -148,16 +153,16 @@ const Navbar = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/seller")} className="cursor-pointer">
                     <Store className="mr-2 h-4 w-4" />
-                    <span>Seller Dashboard</span>
+                    <span>{t('sellerDashboard')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/account/orders")} className="cursor-pointer">
                     <ShoppingCart className="mr-2 h-4 w-4" />
-                    <span>My Orders</span>
+                    <span>{t('myOrders')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Sign out</span>
+                    <span>{t('signOut')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -188,7 +193,7 @@ const Navbar = () => {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input 
                   type="search" 
-                  placeholder="Search..." 
+                  placeholder={t('search')}
                   className="pl-9 pr-4 py-2 w-full"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -202,10 +207,18 @@ const Navbar = () => {
         {isMobile && isMenuOpen && (
           <div className="absolute top-full left-0 right-0 bg-background border-b border-border p-4 shadow-md animate-gentle-appear">
             <div className="flex flex-col space-y-3">
-              <Link to="/browse" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Shop</Link>
-              <Link to="/" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>About</Link>
-              <Link to="/seller" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Sell</Link>
-              <Link to="/cart" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Cart ({totalItems})</Link>
+              <Link to="/browse" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                {t('shop')}
+              </Link>
+              <Link to="/" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                {t('about')}
+              </Link>
+              <Link to="/seller" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                {t('sell')}
+              </Link>
+              <Link to="/cart" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                {t('cart')} ({totalItems})
+              </Link>
               
               {/* Language options for mobile */}
               <div className="py-2">
@@ -228,7 +241,9 @@ const Navbar = () => {
               </div>
               
               {!user && (
-                <Link to="/auth" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>Sign In / Sign Up</Link>
+                <Link to="/auth" className="text-foreground hover:text-primary transition-colors py-2" onClick={() => setIsMenuOpen(false)}>
+                  {t('signIn')}
+                </Link>
               )}
             </div>
           </div>
