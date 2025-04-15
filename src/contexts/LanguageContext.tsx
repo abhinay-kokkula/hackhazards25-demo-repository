@@ -46,6 +46,8 @@ const translations: Translations = {
     searchProducts: "Search products...",
     noProductsFound: "No products found",
     viewAllCategories: "View all categories",
+    errorLoadingProducts: "Error loading products. Please try again.",
+    retry: "Retry",
     
     // Product Details
     quantity: "Quantity",
@@ -99,6 +101,8 @@ const translations: Translations = {
     searchProducts: "उत्पाद खोजें...",
     noProductsFound: "कोई उत्पाद नहीं मिला",
     viewAllCategories: "सभी श्रेणियां देखें",
+    errorLoadingProducts: "उत्पाद लोड करने में त्रुटि। कृपया पुनः प्रयास करें।",
+    retry: "पुनः प्रयास करें",
     
     // Product Details
     quantity: "मात्रा",
@@ -152,6 +156,8 @@ const translations: Translations = {
     searchProducts: "ఉత్పత్తులను శోధించండి...",
     noProductsFound: "ఉత్పత్తులు కనుగొనబడలేదు",
     viewAllCategories: "అన్ని వర్గాలను చూడండి",
+    errorLoadingProducts: "ఉత్పత్తులను లోడ్ చేయడంలో లోపం. దయచేసి మళ్ళీ ప్రయత్నించండి.",
+    retry: "మళ్ళీ ప్రయత్నించండి",
     
     // Product Details
     quantity: "పరిమాణం",
@@ -205,6 +211,8 @@ const translations: Translations = {
     searchProducts: "उत्पादने शोधा...",
     noProductsFound: "उत्पादने सापडली नाहीत",
     viewAllCategories: "सर्व श्रेणी पहा",
+    errorLoadingProducts: "उत्पादने लोड करताना त्रुटी. कृपया पुन्हा प्रयत्न करा.",
+    retry: "पुन्हा प्रयत्न करा",
     
     // Product Details
     quantity: "प्रमाण",

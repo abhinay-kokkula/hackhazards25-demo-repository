@@ -143,7 +143,7 @@ const BrowseCategories = () => {
                 <div className="flex items-center text-sm text-muted-foreground mt-1">
                   <Link to="/" className="hover:text-primary">Home</Link>
                   <ChevronRight size={14} className="mx-1" />
-                  <Link to="/browse" className="hover:text-primary">Browse</Link>
+                  <Link to="/browse" className="hover:text-primary">{t('shop')}</Link>
                   {selectedCategory && (
                     <>
                       <ChevronRight size={14} className="mx-1" />
@@ -202,13 +202,13 @@ const BrowseCategories = () => {
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <p className="text-red-500">Error loading products. Please try again.</p>
+              <p className="text-red-500">{t('errorLoadingProducts')}</p>
               <Button 
                 variant="outline" 
                 className="mt-4"
                 onClick={() => window.location.reload()}
               >
-                Retry
+                {t('retry')}
               </Button>
             </div>
           ) : products && products.length > 0 ? (

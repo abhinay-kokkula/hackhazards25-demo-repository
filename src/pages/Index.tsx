@@ -153,7 +153,7 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Impact Banner */}
+        {/* Community Impact Banner */}
         <section className="py-16 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
@@ -163,24 +163,24 @@ const Index = () => {
                   <p className="text-muted-foreground mb-8">
                     {t('impactDescription')}
                   </p>
-                  <div className="flex flex-wrap gap-4">
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center hover:shadow-md transition-shadow">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white p-4 rounded-lg shadow-md text-center transform transition-transform hover:scale-105 hover:shadow-lg">
                       <div className="text-3xl font-bold text-primary mb-2">87%</div>
                       <div className="text-sm text-muted-foreground">{t('goesToProducers')}</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center hover:shadow-md transition-shadow">
+                    <div className="bg-white p-4 rounded-lg shadow-md text-center transform transition-transform hover:scale-105 hover:shadow-lg">
                       <div className="text-3xl font-bold text-primary mb-2">175+</div>
                       <div className="text-sm text-muted-foreground">{t('ruralCommunities')}</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg shadow-sm flex-1 min-w-[140px] text-center hover:shadow-md transition-shadow">
+                    <div className="bg-white p-4 rounded-lg shadow-md text-center transform transition-transform hover:scale-105 hover:shadow-lg">
                       <div className="text-3xl font-bold text-primary mb-2">12K+</div>
                       <div className="text-sm text-muted-foreground">{t('directLivelihoods')}</div>
                     </div>
                   </div>
                 </div>
                 
-                <div className="md:w-1/2">
-                  <div className="rounded-lg overflow-hidden shadow-md">
+                <div className="md:w-1/2 mt-6 md:mt-0">
+                  <div className="rounded-lg overflow-hidden shadow-lg transform transition-transform hover:scale-105">
                     <img 
                       src="https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&auto=format&fit=crop" 
                       alt="Rural artisan at work" 
