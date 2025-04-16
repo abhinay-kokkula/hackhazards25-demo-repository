@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,6 +52,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ProductWithSellerInfo } from "@/types";
 import { useAuth } from "@/components/AuthProvider";
+import { supabase } from "@/integrations/supabase/client";
+import ImageUpload from "@/components/ImageUpload";
 
 type ProductType = {
   id: string;
@@ -63,9 +66,6 @@ type ProductType = {
   description?: string;
   is_organic?: boolean;
 };
-
-const initialProducts: ProductType[] = [];
-const initialOrders: any[] = [];
 
 const productSchema = z.object({
   name: z.string().min(3, { message: "Product name must be at least 3 characters" }),
@@ -84,11 +84,13 @@ const SellerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
-  const [products, setProducts] = useState<ProductType[]>(initialProducts);
-  const [orders, setOrders] = useState(initialOrders);
+  const [products, setProducts] = useState<ProductType[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<null | ProductType>(null);
   const [orderFilter, setOrderFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
+  const [productImage, setProductImage] = useState("");
 
   const productForm = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -102,6 +104,75 @@ const SellerDashboard = () => {
     },
   });
 
+  // Load products and orders from Supabase
+  useEffect(() => {
+    if (user) {
+      fetchProducts();
+      fetchOrders();
+    }
+  }, [user]);
+
+  // Fetch products from Supabase
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('seller_id', user?.id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      const formattedProducts = data.map(product => ({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        category: product.category || 'Uncategorized',
+        status: product.inventory > 0 ? 'active' : 'out_of_stock',
+        inventory: product.inventory || 0,
+        image: product.images?.[0] || "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&auto=format&fit=crop",
+        description: product.description,
+        is_organic: product.is_organic
+      }));
+      
+      setProducts(formattedProducts);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast.error('Failed to load products');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch orders from Supabase
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .filter('items', 'cs', `{"seller_id":"${user?.id}"}`);
+      
+      if (error) {
+        throw error;
+      }
+      
+      const processedOrders = data.map(order => ({
+        id: order.id,
+        date: new Date(order.created_at).toLocaleDateString(),
+        customer: 'Customer', // We would normally get this from a join
+        status: order.status,
+        total: order.total_amount
+      }));
+      
+      setOrders(processedOrders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to load orders');
+    }
+  };
+
   useEffect(() => {
     if (editingProduct) {
       productForm.reset({
@@ -112,37 +183,62 @@ const SellerDashboard = () => {
         description: editingProduct.description || "",
         is_organic: editingProduct.is_organic || false,
       });
+      setProductImage(editingProduct.image);
+    } else {
+      setProductImage("");
     }
   }, [editingProduct, productForm]);
 
-  const handleSubmitProduct = (data: ProductFormValues) => {
-    if (editingProduct) {
-      setProducts(products.map(p => 
-        p.id === editingProduct.id ? { 
-          ...p, 
-          ...data
-        } : p
-      ));
-      toast.success("Product updated successfully");
-    } else {
-      const newProduct: ProductType = {
-        id: `p${Date.now()}`,
+  const handleSubmitProduct = async (data: ProductFormValues) => {
+    if (!user) {
+      toast.error("You must be logged in to add products");
+      return;
+    }
+
+    try {
+      const productData = {
         name: data.name,
         price: data.price,
         category: data.category,
-        status: data.inventory > 0 ? "active" : "out_of_stock",
-        inventory: data.inventory,
-        image: "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&auto=format&fit=crop",
         description: data.description,
-        is_organic: data.is_organic
+        is_organic: data.is_organic || false,
+        inventory: data.inventory,
+        images: productImage ? [productImage] : [],
+        seller_id: user.id,
       };
-      setProducts([...products, newProduct]);
-      toast.success("Product added successfully");
+      
+      if (editingProduct) {
+        // Update existing product
+        const { error } = await supabase
+          .from('products')
+          .update(productData)
+          .eq('id', editingProduct.id);
+          
+        if (error) throw error;
+        
+        toast.success("Product updated successfully");
+        fetchProducts(); // Refresh products list
+      } else {
+        // Add new product
+        const { error } = await supabase
+          .from('products')
+          .insert([productData]);
+          
+        if (error) throw error;
+        
+        toast.success("Product added successfully");
+        fetchProducts(); // Refresh products list
+      }
+      
+      productForm.reset();
+      setIsAddProductOpen(false);
+      setEditingProduct(null);
+      setProductImage("");
+      
+    } catch (error) {
+      console.error('Error saving product:', error);
+      toast.error('Failed to save product');
     }
-    
-    productForm.reset();
-    setIsAddProductOpen(false);
-    setEditingProduct(null);
   };
 
   const openEditModal = (product: ProductType) => {
@@ -150,9 +246,21 @@ const SellerDashboard = () => {
     setIsAddProductOpen(true);
   };
 
-  const deleteProduct = (id: string) => {
-    setProducts(products.filter(p => p.id !== id));
-    toast.success("Product deleted");
+  const deleteProduct = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', id);
+        
+      if (error) throw error;
+      
+      setProducts(products.filter(p => p.id !== id));
+      toast.success("Product deleted");
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error('Failed to delete product');
+    }
   };
 
   const filteredOrders = orderFilter === "all" 
@@ -169,8 +277,24 @@ const SellerDashboard = () => {
       is_organic: false,
     });
     setEditingProduct(null);
+    setProductImage("");
     setIsAddProductOpen(true);
   };
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 container mx-auto px-4 py-12 flex flex-col items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Please sign in to access your dashboard</h1>
+            <Button onClick={() => navigate("/auth")}>Sign In</Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -212,6 +336,7 @@ const SellerDashboard = () => {
             </TabsTrigger>
           </TabsList>
           
+          {/* Overview Tab Content */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <Card>
@@ -242,13 +367,16 @@ const SellerDashboard = () => {
               </Card>
             </div>
             
+            {/* Recent Orders and Popular Products */}
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Orders</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {orders.length > 0 ? (
+                  {isLoading ? (
+                    <div className="text-center py-6">Loading...</div>
+                  ) : orders.length > 0 ? (
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -260,7 +388,7 @@ const SellerDashboard = () => {
                       <TableBody>
                         {orders.slice(0, 3).map((order) => (
                           <TableRow key={order.id}>
-                            <TableCell>{order.id}</TableCell>
+                            <TableCell>{order.id.substring(0, 8)}...</TableCell>
                             <TableCell>
                               <Badge variant={
                                 order.status === "delivered" ? "default" : 
@@ -288,7 +416,9 @@ const SellerDashboard = () => {
                   <CardTitle>Popular Products</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {products.length > 0 ? (
+                  {isLoading ? (
+                    <div className="text-center py-6">Loading...</div>
+                  ) : products.length > 0 ? (
                     <div className="space-y-4">
                       {products.slice(0, 3).map((product) => (
                         <div key={product.id} className="flex items-center gap-4">
@@ -317,6 +447,7 @@ const SellerDashboard = () => {
             </div>
           </TabsContent>
           
+          {/* Products Tab Content */}
           <TabsContent value="products" className="space-y-6">
             <Card>
               <CardHeader>
@@ -326,7 +457,9 @@ const SellerDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {products.length > 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-6">Loading products...</div>
+                ) : products.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -405,6 +538,7 @@ const SellerDashboard = () => {
             </Card>
           </TabsContent>
           
+          {/* Orders Tab Content */}
           <TabsContent value="orders" className="space-y-6">
             <Card>
               <CardHeader>
@@ -429,7 +563,9 @@ const SellerDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {filteredOrders.length > 0 ? (
+                {isLoading ? (
+                  <div className="text-center py-6">Loading orders...</div>
+                ) : filteredOrders.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -444,7 +580,7 @@ const SellerDashboard = () => {
                     <TableBody>
                       {filteredOrders.map((order) => (
                         <TableRow key={order.id}>
-                          <TableCell className="font-medium">{order.id}</TableCell>
+                          <TableCell className="font-medium">{order.id.substring(0, 8)}...</TableCell>
                           <TableCell>{order.date}</TableCell>
                           <TableCell>{order.customer}</TableCell>
                           <TableCell>
@@ -502,6 +638,7 @@ const SellerDashboard = () => {
             </Card>
           </TabsContent>
           
+          {/* Customers Tab Content */}
           <TabsContent value="customers" className="space-y-6">
             <Card>
               <CardHeader>
@@ -518,6 +655,7 @@ const SellerDashboard = () => {
             </Card>
           </TabsContent>
           
+          {/* Settings Tab Content */}
           <TabsContent value="settings" className="space-y-6">
             <Card>
               <CardHeader>
@@ -696,6 +834,15 @@ const SellerDashboard = () => {
                     </FormItem>
                   )}
                 />
+                
+                {/* Add the image upload component */}
+                <div className="space-y-2">
+                  <FormLabel>Product Image</FormLabel>
+                  <ImageUpload 
+                    onImageUploaded={(url) => setProductImage(url)}
+                    existingImage={productImage}
+                  />
+                </div>
                 
                 <DialogFooter>
                   <Button type="submit">
