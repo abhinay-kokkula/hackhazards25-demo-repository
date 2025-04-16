@@ -64,65 +64,8 @@ type ProductType = {
   is_organic?: boolean;
 };
 
-const mockProducts: ProductType[] = [
-  {
-    id: "p1",
-    name: "Handwoven Bamboo Basket",
-    price: 45.99,
-    category: "Handcrafted",
-    status: "active",
-    inventory: 15,
-    image: "https://images.unsplash.com/photo-1590422749897-47036da0b0ff?w=800&auto=format&fit=crop"
-  },
-  {
-    id: "p2",
-    name: "Clay Pottery Set",
-    price: 89.99,
-    category: "Traditional Art",
-    status: "active",
-    inventory: 8,
-    image: "https://images.unsplash.com/photo-1565193298442-2373bcb29cd4?w=800&auto=format&fit=crop"
-  },
-  {
-    id: "p3",
-    name: "Organic Mountain Honey",
-    price: 12.50,
-    category: "Farm Fresh",
-    status: "out_of_stock",
-    inventory: 0,
-    image: "https://images.unsplash.com/photo-1587049633312-d628ae50a8ae?w=800&auto=format&fit=crop"
-  }
-];
-
-const mockOrders = [
-  {
-    id: "ord-001",
-    date: "2023-11-05",
-    customer: "John Smith",
-    items: [{ productId: "p1", name: "Handwoven Bamboo Basket", quantity: 2 }],
-    total: 91.98,
-    status: "delivered"
-  },
-  {
-    id: "ord-002",
-    date: "2023-11-03",
-    customer: "Emily Johnson",
-    items: [{ productId: "p2", name: "Clay Pottery Set", quantity: 1 }],
-    total: 89.99,
-    status: "shipped"
-  },
-  {
-    id: "ord-003",
-    date: "2023-11-01",
-    customer: "Michael Brown",
-    items: [
-      { productId: "p1", name: "Handwoven Bamboo Basket", quantity: 1 },
-      { productId: "p3", name: "Organic Mountain Honey", quantity: 3 }
-    ],
-    total: 83.49,
-    status: "processing"
-  }
-];
+const initialProducts: ProductType[] = [];
+const initialOrders: any[] = [];
 
 const productSchema = z.object({
   name: z.string().min(3, { message: "Product name must be at least 3 characters" }),
@@ -141,36 +84,8 @@ const SellerDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
-  const [products, setProducts] = useState<ProductType[]>(mockProducts);
-  const [orders, setOrders] = useState([
-    {
-      id: "ord-001",
-      date: "2023-11-05",
-      customer: "John Smith",
-      items: [{ productId: "p1", name: "Handwoven Bamboo Basket", quantity: 2 }],
-      total: 91.98,
-      status: "delivered"
-    },
-    {
-      id: "ord-002",
-      date: "2023-11-03",
-      customer: "Emily Johnson",
-      items: [{ productId: "p2", name: "Clay Pottery Set", quantity: 1 }],
-      total: 89.99,
-      status: "shipped"
-    },
-    {
-      id: "ord-003",
-      date: "2023-11-01",
-      customer: "Michael Brown",
-      items: [
-        { productId: "p1", name: "Handwoven Bamboo Basket", quantity: 1 },
-        { productId: "p3", name: "Organic Mountain Honey", quantity: 3 }
-      ],
-      total: 83.49,
-      status: "processing"
-    }
-  ]);
+  const [products, setProducts] = useState<ProductType[]>(initialProducts);
+  const [orders, setOrders] = useState(initialOrders);
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<null | ProductType>(null);
   const [orderFilter, setOrderFilter] = useState("all");
@@ -211,7 +126,7 @@ const SellerDashboard = () => {
       toast.success("Product updated successfully");
     } else {
       const newProduct: ProductType = {
-        id: `p${products.length + 1}`,
+        id: `p${Date.now()}`,
         name: data.name,
         price: data.price,
         category: data.category,
@@ -580,7 +495,7 @@ const SellerDashboard = () => {
                   </Table>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
-                    No orders match your filter
+                    No orders yet
                   </div>
                 )}
               </CardContent>

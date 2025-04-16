@@ -10,106 +10,99 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-// Sample data for fresh produce with custom order property
-const farmProduce = [
+// Manually added products for featured section
+const manualFeaturedProducts = [
   {
-    id: "5",
-    name: "Organic Tomatoes (1kg)",
-    price: 3.99,
-    images: ["https://images.unsplash.com/photo-1592924357228-91a4daadcfad?w=800&auto=format&fit=crop"],
-    seller_name: "Green Valley Farms",
-    location: "Southern Hills",
+    id: "m1",
+    name: "Handcrafted Wooden Bowl",
+    price: 39.99,
+    images: ["https://images.unsplash.com/photo-1633676921199-84a5720341b4?w=800&auto=format&fit=crop"],
+    seller_name: "Forest Crafts",
+    location: "Mountain Region",
+    seller_rating: 4.9,
+    isFeatured: true,
+    seller_id: "s1"
+  },
+  {
+    id: "m2",
+    name: "Artisanal Ceramic Vase",
+    price: 59.95,
+    images: ["https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=800&auto=format&fit=crop"],
+    seller_name: "Clay Masters",
+    location: "Riverside Valley",
     seller_rating: 4.7,
-    is_organic: true,
-    seller_id: "1",
-    order: 1
+    isFeatured: true,
+    seller_id: "s2"
   },
   {
-    id: "6",
-    name: "Green Chillies Bundle",
-    price: 2.50,
-    images: ["https://images.unsplash.com/photo-1631236783331-564a5885f00a?w=800&auto=format&fit=crop"],
-    seller_name: "Spice Hills",
-    location: "Western Plateau",
+    id: "m3",
+    name: "Hand-Loomed Textile Wall Hanging",
+    price: 85.00,
+    images: ["https://images.unsplash.com/photo-1596462118002-fea3d07e330c?w=800&auto=format&fit=crop"],
+    seller_name: "Weaving Traditions",
+    location: "Eastern Highlands",
     seller_rating: 4.8,
-    is_organic: true,
-    seller_id: "2",
-    order: 3
+    isFeatured: true,
+    seller_id: "s3"
   },
   {
-    id: "7",
-    name: "Farm Fresh Potatoes (2kg)",
-    price: 4.99,
-    images: ["https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=800&auto=format&fit=crop"],
-    seller_name: "Root Harvest",
-    location: "Northern Valley",
-    seller_rating: 4.6,
-    is_organic: true,
-    seller_id: "3",
-    order: 2
-  },
-  {
-    id: "8",
-    name: "Mixed Seasonal Vegetables",
-    price: 12.00,
-    images: ["https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?w=800&auto=format&fit=crop"],
-    seller_name: "Fresh Picks Co-op",
-    location: "Eastern Farmlands",
+    id: "m4",
+    name: "Organic Herbal Tea Collection",
+    price: 28.50,
+    images: ["https://images.unsplash.com/photo-1564890369478-c89ca6d9cde9?w=800&auto=format&fit=crop"],
+    seller_name: "Mountain Herbalists",
+    location: "Northern Slopes",
     seller_rating: 4.9,
     is_organic: true,
-    seller_id: "4",
-    order: 4
+    seller_id: "s4"
   }
 ];
 
-// Sample data for featured products with custom order property
-const featuredProducts = [
+// Manually added farm produce products
+const manualFarmProduce = [
   {
-    id: "1",
-    name: "Hand-woven Bamboo Basket",
-    price: 45.99,
-    images: ["https://images.unsplash.com/photo-1590422749897-47036da0b0ff?w=800&auto=format&fit=crop"],
-    seller_name: "Maya Crafts",
-    location: "Northeastern Hills",
+    id: "m5",
+    name: "Fresh Organic Vegetables Basket",
+    price: 24.99,
+    images: ["https://images.unsplash.com/photo-1466637574441-749b8f19452f?w=800&auto=format&fit=crop"],
+    seller_name: "Valley Organics",
+    location: "Green Valley",
     seller_rating: 4.8,
-    isFeatured: true,
-    seller_id: "5",
-    order: 3
+    is_organic: true,
+    seller_id: "s5"
   },
   {
-    id: "2",
-    name: "Organic Mountain Honey",
-    price: 12.50,
-    images: ["https://images.unsplash.com/photo-1587049633312-d628ae50a8ae?w=800&auto=format&fit=crop"],
-    seller_name: "Nature's Harvest",
-    location: "Western Highlands",
+    id: "m6",
+    name: "Wild Mountain Honey (500g)",
+    price: 18.75,
+    images: ["https://images.unsplash.com/photo-1471943311424-646960669fbc?w=800&auto=format&fit=crop"],
+    seller_name: "Bee Keepers Collective",
+    location: "Mountain Forests",
     seller_rating: 4.9,
     is_organic: true,
-    seller_id: "6",
-    order: 1
+    seller_id: "s6"
   },
   {
-    id: "3",
-    name: "Handmade Clay Pottery Set",
-    price: 89.99,
-    images: ["https://images.unsplash.com/photo-1565193298442-2373bcb29cd4?w=800&auto=format&fit=crop"],
-    seller_name: "Traditional Potters",
-    location: "Southern Valley",
+    id: "m7",
+    name: "Artisanal Cheese Selection",
+    price: 32.50,
+    images: ["https://images.unsplash.com/photo-1452195100486-9cc805987862?w=800&auto=format&fit=crop"],
+    seller_name: "Highland Dairy",
+    location: "Northern Pastures",
     seller_rating: 4.7,
-    seller_id: "7",
-    order: 4
+    is_organic: true,
+    seller_id: "s7"
   },
   {
-    id: "4",
-    name: "Natural Wool Shawl",
-    price: 35.00,
-    images: ["https://images.unsplash.com/photo-1580484031577-cc3ca5e61ab6?w=800&auto=format&fit=crop"],
-    seller_name: "Highland Weavers",
-    location: "Northern Mountains",
+    id: "m8",
+    name: "Freshly Harvested Rice (2kg)",
+    price: 15.25,
+    images: ["https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6?w=800&auto=format&fit=crop"],
+    seller_name: "Rice Growers Association",
+    location: "River Delta",
     seller_rating: 4.6,
-    isFeatured: true,
-    seller_id: "8",
-    order: 2
+    is_organic: true,
+    seller_id: "s8"
   }
 ];
 
@@ -117,10 +110,6 @@ const Index = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { t } = useLanguage();
-  
-  // Sort products by custom order property
-  const sortedFeaturedProducts = [...featuredProducts].sort((a, b) => a.order - b.order);
-  const sortedFarmProduce = [...farmProduce].sort((a, b) => a.order - b.order);
   
   return (
     <div className="min-h-screen flex flex-col">
@@ -146,7 +135,7 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {sortedFeaturedProducts.map((product) => (
+              {manualFeaturedProducts.map((product) => (
                 <ProductCard key={product.id} {...product} />
               ))}
             </div>
@@ -208,7 +197,7 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {sortedFarmProduce.map((product) => (
+              {manualFarmProduce.map((product) => (
                 <ProductCard key={product.id} {...product} />
               ))}
             </div>
