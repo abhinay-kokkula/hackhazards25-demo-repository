@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import ImageUpload from "@/components/ImageUpload";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tables } from "@/integrations/supabase/types";
 
 // Define product and order types explicitly to avoid deep type instantiations
@@ -216,7 +216,6 @@ const SellerDashboard = () => {
               </TabsTrigger>
             </TabsList>
             
-            {/* Dashboard Overview */}
             <TabsContent value="dashboard" className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card>
@@ -254,7 +253,6 @@ const SellerDashboard = () => {
               </div>
             </TabsContent>
             
-            {/* Products Management */}
             <TabsContent value="products">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <Card className="lg:col-span-1">
@@ -435,7 +433,6 @@ const SellerDashboard = () => {
               </div>
             </TabsContent>
             
-            {/* Orders Management */}
             <TabsContent value="orders">
               <Card>
                 <CardHeader>
@@ -443,41 +440,43 @@ const SellerDashboard = () => {
                   <CardDescription>Track and manage your received orders</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {orders.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p>You haven't received any orders yet.</p>
-                      <p className="text-sm mt-1">Orders will appear here once customers make purchases.</p>
-                    </div>
-                  ) : (
-                    <div className="rounded-md border">
-                      <table className="min-w-full divide-y divide-border">
-                        <thead>
-                          <tr className="bg-muted/50">
-                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Order ID</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Customer</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Product</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-border">
-                          {orders.map((order) => (
-                            <tr key={order.id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">#{order.id.substring(0, 8)}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">{order.customer_name}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">{order.product_name}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">${order.total_amount.toFixed(2)}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <span className="px-2 py-1 text-xs rounded-full bg-green-50 text-green-700">
-                                  {order.status || 'Completed'}
-                                </span>
-                              </td>
+                  <ScrollArea className="h-[400px] w-full">
+                    {orders.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>You haven't received any orders yet.</p>
+                        <p className="text-sm mt-1">Orders will appear here once customers make purchases.</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-md border">
+                        <table className="min-w-full divide-y divide-border">
+                          <thead>
+                            <tr className="bg-muted/50">
+                              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Order ID</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Customer</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Product</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                          </thead>
+                          <tbody className="bg-white divide-y divide-border">
+                            {orders.map((order) => (
+                              <tr key={order.id}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">#{order.id.substring(0, 8)}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">{order.customer_name || 'Unknown'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">{order.product_name || 'N/A'}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">${order.total_amount.toFixed(2)}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  <span className="px-2 py-1 text-xs rounded-full bg-green-50 text-green-700">
+                                    {order.status || 'Completed'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </TabsContent>

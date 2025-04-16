@@ -12,9 +12,12 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          customer_name: string | null
           id: string
           items: Json
           payment_method: string | null
+          product_name: string | null
+          seller_id: string | null
           shipping_address: Json | null
           status: string
           total_amount: number
@@ -22,9 +25,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          customer_name?: string | null
           id?: string
           items: Json
           payment_method?: string | null
+          product_name?: string | null
+          seller_id?: string | null
           shipping_address?: Json | null
           status: string
           total_amount: number
@@ -32,9 +38,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          customer_name?: string | null
           id?: string
           items?: Json
           payment_method?: string | null
+          product_name?: string | null
+          seller_id?: string | null
           shipping_address?: Json | null
           status?: string
           total_amount?: number
