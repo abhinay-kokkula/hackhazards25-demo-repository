@@ -1,859 +1,463 @@
 
-import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/components/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/sonner";
-import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { 
-  BarChart, Package2, ShoppingBag, Settings, Users, PlusCircle, 
-  Trash2, Edit, CheckCircle2, XCircle, ArrowUpDown, ExternalLink
-} from "lucide-react";
-import { 
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
-} from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { ProductWithSellerInfo } from "@/types";
-import { useAuth } from "@/components/AuthProvider";
+import { Trash2, Loader2, PlusCircle, PackageCheck, ShoppingCart, BarChart3 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import ImageUpload from "@/components/ImageUpload";
-
-type ProductType = {
-  id: string;
-  name: string;
-  price: number;
-  category: string;
-  status: string;
-  inventory: number;
-  image: string;
-  description?: string;
-  is_organic?: boolean;
-};
-
-const productSchema = z.object({
-  name: z.string().min(3, { message: "Product name must be at least 3 characters" }),
-  price: z.coerce.number().positive({ message: "Price must be a positive number" }),
-  category: z.string().min(1, { message: "Please select a category" }),
-  description: z.string().optional(),
-  inventory: z.coerce.number().int().nonnegative({ message: "Inventory must be a non-negative integer" }),
-  is_organic: z.boolean().optional(),
-});
-
-type ProductFormValues = z.infer<typeof productSchema>;
-
-const categories = ["Handcrafted", "Farm Fresh", "Traditional Art", "Home Goods", "Textiles", "Local Foods"];
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const SellerDashboard = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [products, setProducts] = useState<ProductType[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<null | ProductType>(null);
-  const [orderFilter, setOrderFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Form state
+  const [productName, setProductName] = useState("");
+  const [productDescription, setProductDescription] = useState("");
+  const [productPrice, setProductPrice] = useState("");
+  const [productCategory, setProductCategory] = useState("");
+  const [productLocation, setProductLocation] = useState("");
+  const [isOrganic, setIsOrganic] = useState(false);
   const [productImage, setProductImage] = useState("");
-
-  const productForm = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
-    defaultValues: {
-      name: "",
-      price: 0,
-      category: "",
-      description: "",
-      inventory: 0,
-      is_organic: false,
-    },
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const [dashboardStats, setDashboardStats] = useState({
+    totalProducts: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
   });
 
-  // Load products and orders from Supabase
   useEffect(() => {
     if (user) {
-      fetchProducts();
-      fetchOrders();
+      fetchSellerProducts();
+      fetchSellerOrders();
     }
   }, [user]);
 
-  // Fetch products from Supabase
-  const fetchProducts = async () => {
+  const fetchSellerProducts = async () => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('seller_id', user?.id);
+        .from("products")
+        .select("*")
+        .eq("seller_id", user?.id);
       
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      const formattedProducts = data.map(product => ({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        category: product.category || 'Uncategorized',
-        status: product.inventory > 0 ? 'active' : 'out_of_stock',
-        inventory: product.inventory || 0,
-        image: product.images?.[0] || "https://images.unsplash.com/photo-1605000797499-95a51c5269ae?w=800&auto=format&fit=crop",
-        description: product.description,
-        is_organic: product.is_organic
+      setProducts(data || []);
+      setDashboardStats(prev => ({
+        ...prev,
+        totalProducts: data?.length || 0,
       }));
-      
-      setProducts(formattedProducts);
     } catch (error) {
-      console.error('Error fetching products:', error);
-      toast.error('Failed to load products');
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Fetch orders from Supabase
-  const fetchOrders = async () => {
+  
+  const fetchSellerOrders = async () => {
     try {
       const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .filter('items', 'cs', `{"seller_id":"${user?.id}"}`);
+        .from("orders")
+        .select("*")
+        .eq("seller_id", user?.id);
       
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
       
-      const processedOrders = data.map(order => ({
-        id: order.id,
-        date: new Date(order.created_at).toLocaleDateString(),
-        customer: 'Customer', // We would normally get this from a join
-        status: order.status,
-        total: order.total_amount
-      }));
-      
-      setOrders(processedOrders);
+      setOrders(data || []);
+      setDashboardStats(prev => {
+        const totalRevenue = (data || []).reduce((sum, order) => sum + order.total_amount, 0);
+        return {
+          ...prev,
+          totalOrders: data?.length || 0,
+          totalRevenue,
+        };
+      });
     } catch (error) {
-      console.error('Error fetching orders:', error);
-      toast.error('Failed to load orders');
+      console.error("Error fetching orders:", error);
+      toast.error("Failed to load orders");
     }
   };
 
-  useEffect(() => {
-    if (editingProduct) {
-      productForm.reset({
-        name: editingProduct.name,
-        price: editingProduct.price,
-        category: editingProduct.category,
-        inventory: editingProduct.inventory,
-        description: editingProduct.description || "",
-        is_organic: editingProduct.is_organic || false,
-      });
-      setProductImage(editingProduct.image);
-    } else {
-      setProductImage("");
-    }
-  }, [editingProduct, productForm]);
-
-  const handleSubmitProduct = async (data: ProductFormValues) => {
-    if (!user) {
-      toast.error("You must be logged in to add products");
-      return;
-    }
-
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
     try {
+      if (!productName || !productDescription || !productPrice || !productCategory) {
+        toast.error("Please fill all required fields");
+        return;
+      }
+      
+      const priceValue = parseFloat(productPrice);
+      if (isNaN(priceValue) || priceValue <= 0) {
+        toast.error("Please enter a valid price");
+        return;
+      }
+      
+      // Create product object
       const productData = {
-        name: data.name,
-        price: data.price,
-        category: data.category,
-        description: data.description,
-        is_organic: data.is_organic || false,
-        inventory: data.inventory,
+        name: productName,
+        description: productDescription,
+        price: priceValue,
+        category: productCategory,
+        location: productLocation,
+        is_organic: isOrganic,
+        seller_id: user?.id,
         images: productImage ? [productImage] : [],
-        seller_id: user.id,
       };
       
-      if (editingProduct) {
-        // Update existing product
-        const { error } = await supabase
-          .from('products')
-          .update(productData)
-          .eq('id', editingProduct.id);
-          
-        if (error) throw error;
-        
-        toast.success("Product updated successfully");
-        fetchProducts(); // Refresh products list
-      } else {
-        // Add new product
-        const { error } = await supabase
-          .from('products')
-          .insert([productData]);
-          
-        if (error) throw error;
-        
-        toast.success("Product added successfully");
-        fetchProducts(); // Refresh products list
-      }
+      const { data, error } = await supabase
+        .from("products")
+        .insert(productData)
+        .select();
       
-      productForm.reset();
-      setIsAddProductOpen(false);
-      setEditingProduct(null);
+      if (error) throw error;
+      
+      // Refresh product list
+      fetchSellerProducts();
+      
+      // Clear form
+      setProductName("");
+      setProductDescription("");
+      setProductPrice("");
+      setProductCategory("");
+      setProductLocation("");
+      setIsOrganic(false);
       setProductImage("");
       
+      toast.success("Product created successfully!");
     } catch (error) {
-      console.error('Error saving product:', error);
-      toast.error('Failed to save product');
+      console.error("Error creating product:", error);
+      toast.error("Failed to create product");
+    } finally {
+      setIsSubmitting(false);
     }
   };
-
-  const openEditModal = (product: ProductType) => {
-    setEditingProduct(product);
-    setIsAddProductOpen(true);
-  };
-
-  const deleteProduct = async (id: string) => {
+  
+  const handleDeleteProduct = async (productId: string) => {
     try {
       const { error } = await supabase
-        .from('products')
+        .from("products")
         .delete()
-        .eq('id', id);
+        .eq("id", productId);
         
       if (error) throw error;
       
-      setProducts(products.filter(p => p.id !== id));
-      toast.success("Product deleted");
+      // Remove from local state
+      setProducts(products.filter(p => p.id !== productId));
+      toast.success("Product deleted successfully");
     } catch (error) {
-      console.error('Error deleting product:', error);
-      toast.error('Failed to delete product');
+      console.error("Error deleting product:", error);
+      toast.error("Failed to delete product");
     }
   };
-
-  const filteredOrders = orderFilter === "all" 
-    ? orders
-    : orders.filter(order => order.status === orderFilter);
-
-  const handleAddProductClick = () => {
-    productForm.reset({
-      name: "",
-      price: 0,
-      category: "",
-      description: "",
-      inventory: 0,
-      is_organic: false,
-    });
-    setEditingProduct(null);
-    setProductImage("");
-    setIsAddProductOpen(true);
-  };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex-1 container mx-auto px-4 py-12 flex flex-col items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Please sign in to access your dashboard</h1>
-            <Button onClick={() => navigate("/auth")}>Sign In</Button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
+  
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
       
-      <div className="flex-1 container mx-auto px-4 py-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Seller Dashboard</h1>
-            <p className="text-muted-foreground">Manage your rural products</p>
-          </div>
-          <Button onClick={handleAddProductClick} className="mt-4 md:mt-0">
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add New Product
-          </Button>
-        </div>
-        
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-8">
-          <TabsList className="grid grid-cols-4 md:grid-cols-5 lg:w-[600px]">
-            <TabsTrigger value="overview" className="text-xs md:text-sm">
-              <BarChart className="w-4 h-4 mr-2 hidden sm:block" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="products" className="text-xs md:text-sm">
-              <Package2 className="w-4 h-4 mr-2 hidden sm:block" />
-              Products
-            </TabsTrigger>
-            <TabsTrigger value="orders" className="text-xs md:text-sm">
-              <ShoppingBag className="w-4 h-4 mr-2 hidden sm:block" />
-              Orders
-            </TabsTrigger>
-            <TabsTrigger value="customers" className="text-xs md:text-sm">
-              <Users className="w-4 h-4 mr-2 hidden sm:block" />
-              Customers
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs md:text-sm hidden md:flex">
-              <Settings className="w-4 h-4 mr-2 hidden sm:block" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+      <main className="flex-1 py-8 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <h1 className="text-3xl font-bold mb-8">Seller Dashboard</h1>
           
-          {/* Overview Tab Content */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Your Products</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{products.length}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Active Listings</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {products.filter(p => p.status === "active").length}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{orders.length}</div>
-                </CardContent>
-              </Card>
-            </div>
+          <Tabs defaultValue="dashboard" className="space-y-8">
+            <TabsList className="w-full max-w-md mx-auto grid grid-cols-3 mb-8">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <BarChart3 size={16} />
+                <span>Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="products" className="flex items-center gap-2">
+                <PackageCheck size={16} />
+                <span>Products</span>
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="flex items-center gap-2">
+                <ShoppingCart size={16} />
+                <span>Orders</span>
+              </TabsTrigger>
+            </TabsList>
             
-            {/* Recent Orders and Popular Products */}
-            <div className="grid gap-6 md:grid-cols-2">
+            {/* Dashboard Overview */}
+            <TabsContent value="dashboard" className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Products Listed
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{dashboardStats.totalProducts}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Orders
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{dashboardStats.totalOrders}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Revenue
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ${dashboardStats.totalRevenue.toFixed(2)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            
+            {/* Products Management */}
+            <TabsContent value="products">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <Card className="lg:col-span-1">
+                  <CardHeader>
+                    <CardTitle>Add New Product</CardTitle>
+                    <CardDescription>Create a new product to sell</CardDescription>
+                  </CardHeader>
+                  <form onSubmit={handleCreateProduct}>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="product-name">Product Name</Label>
+                        <Input 
+                          id="product-name" 
+                          placeholder="Enter product name"
+                          value={productName}
+                          onChange={(e) => setProductName(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="product-description">Description</Label>
+                        <Textarea 
+                          id="product-description" 
+                          placeholder="Describe your product"
+                          value={productDescription}
+                          onChange={(e) => setProductDescription(e.target.value)}
+                          required
+                          className="min-h-32"
+                        />
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="product-price">Price ($)</Label>
+                          <Input 
+                            id="product-price" 
+                            type="number"
+                            placeholder="29.99"
+                            step="0.01"
+                            min="0.01"
+                            value={productPrice}
+                            onChange={(e) => setProductPrice(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="product-category">Category</Label>
+                          <Select 
+                            value={productCategory} 
+                            onValueChange={setProductCategory}
+                            required
+                          >
+                            <SelectTrigger id="product-category">
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Handcrafted">Handcrafted</SelectItem>
+                              <SelectItem value="Farm Fresh">Farm Fresh</SelectItem>
+                              <SelectItem value="Textiles">Textiles</SelectItem>
+                              <SelectItem value="Jewelry">Jewelry</SelectItem>
+                              <SelectItem value="Pottery">Pottery</SelectItem>
+                              <SelectItem value="Woodwork">Woodwork</SelectItem>
+                              <SelectItem value="Specialty Foods">Specialty Foods</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="product-location">Source Location</Label>
+                        <Input 
+                          id="product-location" 
+                          placeholder="e.g., Mountain Region, Valley Village"
+                          value={productLocation}
+                          onChange={(e) => setProductLocation(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex items-center space-x-2 pt-2">
+                        <Switch 
+                          id="is-organic" 
+                          checked={isOrganic}
+                          onCheckedChange={setIsOrganic}
+                        />
+                        <Label htmlFor="is-organic">
+                          This product is organic/eco-friendly
+                        </Label>
+                      </div>
+                      <div className="space-y-2 pt-2">
+                        <Label>Product Image</Label>
+                        <ImageUpload 
+                          onImageUploaded={(url) => setProductImage(url)} 
+                          existingImage={productImage}
+                        />
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                      <Button 
+                        type="submit" 
+                        className="w-full"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Product
+                          </>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </form>
+                </Card>
+                
+                <div className="lg:col-span-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Your Products</CardTitle>
+                      <CardDescription>Manage your listed products</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoading ? (
+                        <div className="flex justify-center py-8">
+                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                      ) : products.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>You haven't added any products yet.</p>
+                          <p className="text-sm mt-1">Create your first product to start selling!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {products.map((product) => (
+                            <div 
+                              key={product.id} 
+                              className="border rounded-lg p-4 flex items-center gap-4"
+                            >
+                              <div className="w-16 h-16 bg-muted rounded-md overflow-hidden">
+                                {product.images?.length > 0 ? (
+                                  <img 
+                                    src={product.images[0]} 
+                                    alt={product.name} 
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground">
+                                    No img
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="font-medium">{product.name}</h3>
+                                <p className="text-sm text-muted-foreground truncate">
+                                  {product.description.substring(0, 100)}...
+                                </p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-sm font-medium">${product.price.toFixed(2)}</span>
+                                  <span className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">
+                                    {product.category}
+                                  </span>
+                                </div>
+                              </div>
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                onClick={() => handleDeleteProduct(product.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
+            
+            {/* Orders Management */}
+            <TabsContent value="orders">
               <Card>
                 <CardHeader>
                   <CardTitle>Recent Orders</CardTitle>
+                  <CardDescription>Track and manage your received orders</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {isLoading ? (
-                    <div className="text-center py-6">Loading...</div>
-                  ) : orders.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Order ID</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {orders.slice(0, 3).map((order) => (
-                          <TableRow key={order.id}>
-                            <TableCell>{order.id.substring(0, 8)}...</TableCell>
-                            <TableCell>
-                              <Badge variant={
-                                order.status === "delivered" ? "default" : 
-                                order.status === "shipped" ? "secondary" : 
-                                "outline"
-                              }>
-                                {order.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      No orders yet
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Popular Products</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="text-center py-6">Loading...</div>
-                  ) : products.length > 0 ? (
-                    <div className="space-y-4">
-                      {products.slice(0, 3).map((product) => (
-                        <div key={product.id} className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded border bg-background flex-shrink-0 overflow-hidden">
-                            <img 
-                              src={product.image} 
-                              alt={product.name}
-                              className="h-full w-full object-cover" 
-                            />
-                          </div>
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">{product.name}</p>
-                            <p className="text-sm text-muted-foreground">{product.category}</p>
-                          </div>
-                          <div className="font-medium">₹{product.price.toFixed(2)}</div>
-                        </div>
-                      ))}
+                  {orders.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>You haven't received any orders yet.</p>
+                      <p className="text-sm mt-1">Orders will appear here once customers make purchases.</p>
                     </div>
                   ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      No products added yet
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-          
-          {/* Products Tab Content */}
-          <TabsContent value="products" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Products</CardTitle>
-                <CardDescription>
-                  Manage your product listings.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="text-center py-6">Loading products...</div>
-                ) : products.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Inventory</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {products.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded bg-background overflow-hidden">
-                                <img 
-                                  src={product.image} 
-                                  alt={product.name}
-                                  className="h-full w-full object-cover" 
-                                />
-                              </div>
-                              {product.name}
-                            </div>
-                          </TableCell>
-                          <TableCell>{product.category}</TableCell>
-                          <TableCell>₹{product.price.toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Badge variant={product.status === "active" ? "default" : "secondary"}>
-                              {product.status === "active" ? "Active" : "Out of Stock"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{product.inventory}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <span className="sr-only">Open menu</span>
-                                  <ArrowUpDown className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => openEditModal(product)}>
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => {
-                                  window.open(`/product/${product.id}`, '_blank');
-                                }}>
-                                  <ExternalLink className="mr-2 h-4 w-4" />
-                                  View
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  className="text-red-600"
-                                  onClick={() => deleteProduct(product.id)}
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">No products added yet</p>
-                    <Button onClick={handleAddProductClick}>Add Your First Product</Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Orders Tab Content */}
-          <TabsContent value="orders" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                  <div>
-                    <CardTitle>Orders</CardTitle>
-                    <CardDescription>
-                      Manage your customer orders.
-                    </CardDescription>
-                  </div>
-                  <Select value={orderFilter} onValueChange={setOrderFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Orders</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="text-center py-6">Loading orders...</div>
-                ) : filteredOrders.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Order ID</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="font-medium">{order.id.substring(0, 8)}...</TableCell>
-                          <TableCell>{order.date}</TableCell>
-                          <TableCell>{order.customer}</TableCell>
-                          <TableCell>
-                            <Badge variant={
-                              order.status === "delivered" ? "default" : 
-                              order.status === "shipped" ? "secondary" : 
-                              "outline"
-                            }>
-                              {order.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">₹{order.total.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <span className="sr-only">Open menu</span>
-                                  <ArrowUpDown className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem>
-                                  <ExternalLink className="mr-2 h-4 w-4" />
-                                  View Details
-                                </DropdownMenuItem>
-                                {order.status === "processing" && (
-                                  <DropdownMenuItem>
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Mark as Shipped
-                                  </DropdownMenuItem>
-                                )}
-                                {order.status === "shipped" && (
-                                  <DropdownMenuItem>
-                                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                                    Mark as Delivered
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem>
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Cancel Order
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No orders yet
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Customers Tab Content */}
-          <TabsContent value="customers" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Customers</CardTitle>
-                <CardDescription>
-                  View your customer information.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  Customer management coming soon...
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {/* Settings Tab Content */}
-          <TabsContent value="settings" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Store Settings</CardTitle>
-                <CardDescription>
-                  Manage your store profile and preferences.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Profile Information</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Store Name</label>
-                      <Input placeholder="Your store name" defaultValue="Artisan Crafts" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Location</label>
-                      <Input placeholder="Your location" defaultValue="Northeastern Hills" />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="text-sm font-medium">Store Description</label>
-                      <Textarea 
-                        placeholder="Describe your store" 
-                        defaultValue="We create handcrafted items using traditional techniques passed down through generations."
-                        className="min-h-[100px]"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <h3 className="text-lg font-medium">Payment Settings</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Bank Account Number</label>
-                      <Input placeholder="Your bank account number" defaultValue="XXXX-XXXX-XXXX-1234" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">UPI ID</label>
-                      <Input placeholder="Your UPI ID" defaultValue="artisan@ybl" />
-                    </div>
-                  </div>
-                </div>
-                
-                <Button>Save Changes</Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-        
-        <Dialog open={isAddProductOpen} onOpenChange={setIsAddProductOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{editingProduct ? "Edit Product" : "Add New Product"}</DialogTitle>
-              <DialogDescription>
-                {editingProduct 
-                  ? "Update your product details below."
-                  : "Fill in the details to add a new product to your store."
-                }
-              </DialogDescription>
-            </DialogHeader>
-            
-            <Form {...productForm}>
-              <form onSubmit={productForm.handleSubmit(handleSubmitProduct)} className="space-y-4">
-                <FormField
-                  control={productForm.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Product Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter product name" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={productForm.control}
-                    name="price"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Price (₹)</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" min="0" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={productForm.control}
-                    name="inventory"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Inventory</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <FormField
-                  control={productForm.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {category}
-                            </SelectItem>
+                    <div className="rounded-md border">
+                      <table className="min-w-full divide-y divide-border">
+                        <thead>
+                          <tr className="bg-muted/50">
+                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Order ID</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Customer</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Product</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-border">
+                          {orders.map((order) => (
+                            <tr key={order.id}>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">#{order.id.substring(0, 8)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">{order.customer_name}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">{order.product_name}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">${order.total_amount.toFixed(2)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                <span className="px-2 py-1 text-xs rounded-full bg-green-50 text-green-700">
+                                  {order.status || 'Completed'}
+                                </span>
+                              </td>
+                            </tr>
                           ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
+                        </tbody>
+                      </table>
+                    </div>
                   )}
-                />
-                
-                <FormField
-                  control={productForm.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Describe your product" 
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={productForm.control}
-                  name="is_organic"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <input
-                          type="checkbox"
-                          checked={field.value}
-                          onChange={field.onChange}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Organic Product</FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Check this box if the product is certified organic.
-                        </p>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-                
-                {/* Add the image upload component */}
-                <div className="space-y-2">
-                  <FormLabel>Product Image</FormLabel>
-                  <ImageUpload 
-                    onImageUploaded={(url) => setProductImage(url)}
-                    existingImage={productImage}
-                  />
-                </div>
-                
-                <DialogFooter>
-                  <Button type="submit">
-                    {editingProduct ? "Update Product" : "Add Product"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
       
       <Footer />
     </div>
