@@ -15,12 +15,38 @@ import { supabase } from "@/integrations/supabase/client";
 import ImageUpload from "@/components/ImageUpload";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { Tables } from "@/integrations/supabase/types";
+
+// Define product and order types explicitly to avoid deep type instantiations
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string | null;
+  location: string | null;
+  is_organic: boolean | null;
+  seller_id: string;
+  images: string[] | null;
+  created_at?: string | null;
+};
+
+type Order = {
+  id: string;
+  user_id: string;
+  seller_id?: string;
+  product_name?: string;
+  customer_name?: string;
+  total_amount: number;
+  status?: string;
+  created_at?: string;
+};
 
 const SellerDashboard = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   
   // Form state
   const [productName, setProductName] = useState("");
@@ -79,7 +105,7 @@ const SellerDashboard = () => {
       
       setOrders(data || []);
       setDashboardStats(prev => {
-        const totalRevenue = (data || []).reduce((sum, order) => sum + order.total_amount, 0);
+        const totalRevenue = (data || []).reduce((sum, order) => sum + (order.total_amount || 0), 0);
         return {
           ...prev,
           totalOrders: data?.length || 0,
