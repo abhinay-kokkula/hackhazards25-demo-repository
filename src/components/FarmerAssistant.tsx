@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/components/ui/use-toast"
 import VoiceInput from "./VoiceInput"
 import { supabase } from "@/integrations/supabase/client"
-import { Send, Bot } from "lucide-react"
+import { Send, Bot, Loader2 } from "lucide-react"
 import { useLocation } from "react-router-dom"
 
 type Message = {
@@ -21,11 +21,19 @@ const FarmerAssistant = () => {
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
   const location = useLocation()
+  const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // Only show on homepage
   if (location.pathname !== '/') {
     return null
   }
+
+  // Auto-scroll to bottom when messages update
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+    }
+  }, [messages])
 
   const handleSend = async (text: string) => {
     if (!text.trim()) return
@@ -37,14 +45,18 @@ const FarmerAssistant = () => {
     setInput('')
 
     try {
+      console.log("Sending request to Groq API with:", text.substring(0, 30) + "...")
       // Call the Groq edge function with proper error handling
       const { data, error } = await supabase.functions.invoke('groq-chat', {
         body: { prompt: text, language: 'en' }
       })
 
       if (error) {
+        console.error("Supabase function error:", error)
         throw new Error(`API Error: ${error.message}`)
       }
+
+      console.log("Received response from Groq API:", data)
 
       // Safely extract the response content from the data
       let responseContent = "I couldn't process that. Please try again."
@@ -89,7 +101,7 @@ const FarmerAssistant = () => {
       </CardHeader>
       <CardContent className="p-0">
         <div className="p-4">
-          <ScrollArea className="h-[300px] pr-4 mb-4">
+          <ScrollArea className="h-[300px] pr-4 mb-4" ref={scrollAreaRef}>
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
                 <Bot className="h-8 w-8 mb-2 opacity-40" />
@@ -134,7 +146,11 @@ const FarmerAssistant = () => {
               disabled={!input.trim() || isLoading}
               className="bg-accent hover:bg-accent/90 text-accent-foreground"
             >
-              <Send className="h-4 w-4" />
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>

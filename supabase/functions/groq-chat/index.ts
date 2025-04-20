@@ -27,8 +27,8 @@ serve(async (req) => {
 
     console.log(`Processing request with prompt: "${prompt.substring(0, 30)}..." in language: ${language}`)
 
-    // Call Groq API
-    const response = await fetch('https://api.groq.com/v1/chat/completions', {
+    // Call Groq API with correct endpoint
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${groqApiKey}`,
