@@ -15,11 +15,23 @@ serve(async (req) => {
   try {
     const { prompt, language = 'en' } = await req.json()
 
+    // Validate input
+    if (!prompt || typeof prompt !== 'string') {
+      throw new Error('Invalid prompt: Expected a non-empty string')
+    }
+
+    const groqApiKey = Deno.env.get('GROQ_API_KEY')
+    if (!groqApiKey) {
+      throw new Error('GROQ_API_KEY is not set in environment variables')
+    }
+
+    console.log(`Processing request with prompt: "${prompt.substring(0, 30)}..." in language: ${language}`)
+
     // Call Groq API
     const response = await fetch('https://api.groq.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('GROQ_API_KEY')}`,
+        'Authorization': `Bearer ${groqApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -27,7 +39,7 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `You are a helpful assistant for farmers. Communicate in ${language}. Keep responses concise and practical.`
+            content: `You are a helpful assistant for farmers. Communicate in ${language}. Keep responses concise and practical. Focus on agricultural information, crop prices, market trends, farming techniques, and relevant advice. Provide factual information and avoid making up details.`
           },
           {
             role: 'user',
@@ -39,13 +51,24 @@ serve(async (req) => {
       }),
     })
 
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('Groq API error:', errorText)
+      throw new Error(`Groq API returned ${response.status}: ${errorText}`)
+    }
+
     const data = await response.json()
+    console.log('Successfully received response from Groq API')
+    
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
     console.error('Error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      choices: [{ message: { content: "I'm having trouble connecting right now. Please try again later." } }] 
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

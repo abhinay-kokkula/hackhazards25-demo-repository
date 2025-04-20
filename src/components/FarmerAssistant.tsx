@@ -1,5 +1,5 @@
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast"
 import VoiceInput from "./VoiceInput"
 import { supabase } from "@/integrations/supabase/client"
 import { Send, Bot } from "lucide-react"
+import { useLocation } from "react-router-dom"
 
 type Message = {
   content: string
@@ -19,6 +20,12 @@ const FarmerAssistant = () => {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+  const location = useLocation()
+
+  // Only show on homepage
+  if (location.pathname !== '/') {
+    return null
+  }
 
   const handleSend = async (text: string) => {
     if (!text.trim()) return
@@ -30,16 +37,22 @@ const FarmerAssistant = () => {
     setInput('')
 
     try {
+      // Call the Groq edge function with proper error handling
       const { data, error } = await supabase.functions.invoke('groq-chat', {
         body: { prompt: text, language: 'en' }
       })
 
-      if (error) throw error
+      if (error) {
+        throw new Error(`API Error: ${error.message}`)
+      }
 
-      // Safely handle the response to avoid undefined errors
+      // Safely extract the response content from the data
       let responseContent = "I couldn't process that. Please try again."
+      
       if (data && data.choices && data.choices.length > 0 && data.choices[0].message) {
         responseContent = data.choices[0].message.content || responseContent
+      } else {
+        console.error("Unexpected response format:", data)
       }
 
       const assistantMessage: Message = { 
@@ -67,7 +80,7 @@ const FarmerAssistant = () => {
   }
 
   return (
-    <Card className="w-full max-w-sm mx-auto bg-white border-accent/20 shadow-lg">
+    <Card className="w-full max-w-sm mx-auto bg-white border-accent/20 shadow-lg sticky top-20">
       <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 pb-3">
         <CardTitle className="flex items-center gap-2 text-xl">
           <Bot className="h-5 w-5 text-accent" />
