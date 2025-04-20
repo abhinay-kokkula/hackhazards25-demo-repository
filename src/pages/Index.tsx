@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Navbar from "@/components/Navbar";
@@ -134,7 +133,6 @@ const Index = () => {
     }
   ];
 
-  // Manually added farm produce products
   const manualFarmProduce = [
     {
       id: "m5",
@@ -193,6 +191,13 @@ const Index = () => {
         <Hero />
         
         <CategorySection />
+        
+        {/* Add FarmerAssistant before Featured Products */}
+        <section className="py-16 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
+          <div className="container mx-auto px-4">
+            <FarmerAssistant />
+          </div>
+        </section>
         
         {/* Featured Products */}
         <section className="py-16">
