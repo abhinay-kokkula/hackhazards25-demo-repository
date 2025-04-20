@@ -178,22 +178,29 @@ const Index = () => {
   const displayedFarmProducts = farmProducts.length > 0 ? farmProducts : manualFarmProduce;
   
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
       <Navbar />
       
       <main className="flex-1">
-        <Hero />
-        
-        <CategorySection />
-        
-        <section className="py-16 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
-          <div className="container mx-auto px-4">
+        {!isMobile && (
+          <div className="fixed right-4 top-20 z-10 w-80 hidden lg:block">
             <FarmerAssistant />
           </div>
-        </section>
+        )}
+        
+        <Hero />
+        <CategorySection />
+        
+        {isMobile && (
+          <section className="py-8 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
+            <div className="container mx-auto px-4">
+              <FarmerAssistant />
+            </div>
+          </section>
+        )}
         
         <section className="py-16">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 lg:pr-96">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold">{t('featuredProducts')}</h2>
               <Button 
@@ -205,7 +212,7 @@ const Index = () => {
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {isLoading ? (
                 [...Array(4)].map((_, i) => (
                   <div key={i} className="bg-gray-100 animate-pulse h-72 rounded-lg"></div>
@@ -220,7 +227,7 @@ const Index = () => {
         </section>
         
         <section className="py-16 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 lg:pr-96">
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="md:w-1/2">
@@ -259,7 +266,7 @@ const Index = () => {
         </section>
         
         <section className="py-16">
-          <div className="container mx-auto px-4">
+          <div className="container mx-auto px-4 lg:pr-96">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold">{t('farmFreshProduce')}</h2>
               <Button 
@@ -271,7 +278,7 @@ const Index = () => {
               </Button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {isLoading ? (
                 [...Array(4)].map((_, i) => (
                   <div key={i} className="bg-gray-100 animate-pulse h-72 rounded-lg"></div>
@@ -286,7 +293,7 @@ const Index = () => {
         </section>
         
         <section className="py-20 bg-gradient-to-r from-primary to-accent">
-          <div className="container mx-auto px-4 text-center">
+          <div className="container mx-auto px-4 text-center lg:pr-96">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('readyToShare')}</h2>
             <p className="text-white/90 max-w-xl mx-auto mb-8">
               {t('joinCommunity')}
