@@ -5,6 +5,7 @@ import Hero from "@/components/Hero";
 import CategorySection from "@/components/CategorySection";
 import ProductCard from "@/components/ProductCard";
 import Footer from "@/components/Footer";
+import FarmerAssistant from "@/components/FarmerAssistant";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
@@ -20,12 +21,10 @@ const Index = () => {
   const [farmProducts, setFarmProducts] = useState<ProductWithSellerInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch products from Supabase
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        // Fetch featured products
         const { data: featuredData, error: featuredError } = await supabase
           .from('products')
           .select(`
@@ -36,7 +35,6 @@ const Index = () => {
         
         if (featuredError) throw featuredError;
         
-        // Fetch farm products
         const { data: farmData, error: farmError } = await supabase
           .from('products')
           .select(`
@@ -48,7 +46,6 @@ const Index = () => {
         
         if (farmError) throw farmError;
         
-        // Format the products
         const formattedFeatured = featuredData.map(transformProductData);
         const formattedFarm = farmData.map(transformProductData);
         
@@ -56,7 +53,6 @@ const Index = () => {
         setFarmProducts(formattedFarm);
       } catch (error) {
         console.error("Error fetching products:", error);
-        // Fall back to manual products if database fetch fails
         setFeaturedProducts(manualFeaturedProducts);
         setFarmProducts(manualFarmProduce);
       } finally {
@@ -67,7 +63,6 @@ const Index = () => {
     fetchProducts();
   }, []);
   
-  // Helper function to transform product data
   const transformProductData = (product: any): ProductWithSellerInfo => {
     return {
       id: product.id,
@@ -85,7 +80,6 @@ const Index = () => {
     };
   };
   
-  // Fallback products if database is empty
   const manualFeaturedProducts = [
     {
       id: "m1",
@@ -192,14 +186,12 @@ const Index = () => {
         
         <CategorySection />
         
-        {/* Add FarmerAssistant before Featured Products */}
         <section className="py-16 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
           <div className="container mx-auto px-4">
             <FarmerAssistant />
           </div>
         </section>
         
-        {/* Featured Products */}
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
@@ -227,7 +219,6 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Community Impact Banner */}
         <section className="py-16 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
           <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
@@ -267,7 +258,6 @@ const Index = () => {
           </div>
         </section>
         
-        {/* Farm Fresh Products */}
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
@@ -295,7 +285,6 @@ const Index = () => {
           </div>
         </section>
         
-        {/* CTA Section */}
         <section className="py-20 bg-gradient-to-r from-primary to-accent">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('readyToShare')}</h2>

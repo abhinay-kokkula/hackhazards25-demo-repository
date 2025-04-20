@@ -24,7 +24,8 @@ const FarmerAssistant = () => {
     if (!text.trim()) return
 
     setIsLoading(true)
-    const newMessages = [...messages, { role: 'user', content: text }]
+    const newUserMessage: Message = { role: 'user', content: text }
+    const newMessages = [...messages, newUserMessage]
     setMessages(newMessages)
     setInput('')
 
@@ -35,8 +36,11 @@ const FarmerAssistant = () => {
 
       if (error) throw error
 
-      const assistantMessage = data.choices[0]?.message?.content || "I couldn't process that. Please try again."
-      setMessages([...newMessages, { role: 'assistant', content: assistantMessage }])
+      const assistantMessage: Message = { 
+        role: 'assistant', 
+        content: data.choices[0]?.message?.content || "I couldn't process that. Please try again."
+      }
+      setMessages([...newMessages, assistantMessage])
     } catch (error) {
       console.error('Error:', error)
       toast({
