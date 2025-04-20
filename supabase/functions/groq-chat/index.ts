@@ -27,7 +27,7 @@ serve(async (req) => {
 
     console.log(`Processing request with prompt: "${prompt.substring(0, 30)}..." in language: ${language}`)
 
-    // Call Groq API with correct endpoint
+    // Call Groq API with correct endpoint and error handling
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
