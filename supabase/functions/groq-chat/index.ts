@@ -27,7 +27,10 @@ serve(async (req) => {
 
     console.log(`Processing request with prompt: "${prompt.substring(0, 30)}..." in language: ${language}`)
 
-    // Call Groq API with correct endpoint and error handling
+    // Call Groq API with more detailed logging
+    console.log('Sending request to Groq API...')
+    const startTime = Date.now()
+    
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -51,14 +54,16 @@ serve(async (req) => {
       }),
     })
 
+    console.log(`Groq API response status: ${response.status} (${Date.now() - startTime}ms)`)
+    
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('Groq API error:', errorText)
+      console.error(`Groq API error (${response.status}):`, errorText)
       throw new Error(`Groq API returned ${response.status}: ${errorText}`)
     }
 
     const data = await response.json()
-    console.log('Successfully received response from Groq API')
+    console.log('Successfully received response from Groq API:', JSON.stringify(data).substring(0, 200) + '...')
     
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

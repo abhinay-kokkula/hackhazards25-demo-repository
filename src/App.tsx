@@ -8,6 +8,7 @@ import AuthProvider from "./components/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CartProvider from "./components/CartProvider";
 import { LanguageProvider } from "./contexts/LanguageContext";
+import FarmerAssistant from "./components/FarmerAssistant";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import SellerDashboard from "./pages/SellerDashboard";
@@ -51,6 +52,7 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <FarmerAssistant />
             </BrowserRouter>
           </TooltipProvider>
         </LanguageProvider>

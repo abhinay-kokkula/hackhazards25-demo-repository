@@ -9,6 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import VoiceInput from "./VoiceInput"
 import { supabase } from "@/integrations/supabase/client"
 import { Send, Bot, Loader2, MessageCircle } from "lucide-react"
+import { useLocation } from "react-router-dom"
 
 type Message = {
   content: string
@@ -22,6 +23,8 @@ const FarmerAssistant = () => {
   const [isOpen, setIsOpen] = useState(false)
   const { toast } = useToast()
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const location = useLocation()
+  const isHomePage = location.pathname === "/"
 
   // Auto-scroll to bottom when messages update
   useEffect(() => {
@@ -29,6 +32,13 @@ const FarmerAssistant = () => {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
     }
   }, [messages])
+
+  // Close sheet when navigating away from home page
+  useEffect(() => {
+    if (!isHomePage) {
+      setIsOpen(false)
+    }
+  }, [isHomePage])
 
   const handleSend = async (text: string) => {
     if (!text.trim()) return
@@ -72,6 +82,12 @@ const FarmerAssistant = () => {
         title: "Error",
         description: "Failed to get a response. Please try again.",
       })
+      // Add error message to the chat
+      const errorMessage: Message = { 
+        role: 'assistant', 
+        content: "I'm having trouble connecting right now. Please try again later." 
+      }
+      setMessages([...newMessages, errorMessage])
     } finally {
       setIsLoading(false)
     }
@@ -82,6 +98,21 @@ const FarmerAssistant = () => {
     if (transcription.trim()) {
       handleSend(transcription)
     }
+  }
+  
+  // On non-home pages, only show the button without auto-opening the sheet
+  if (!isHomePage) {
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button 
+          size="icon"
+          className="h-12 w-12 rounded-full bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg"
+          onClick={() => window.location.href = "/"}
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Button>
+      </div>
+    );
   }
 
   return (
@@ -131,6 +162,14 @@ const FarmerAssistant = () => {
                           </div>
                         </div>
                       ))}
+                      {isLoading && (
+                        <div className="flex justify-start">
+                          <div className="bg-muted rounded-lg px-3 py-2 flex items-center space-x-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Thinking...</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </ScrollArea>
@@ -140,7 +179,7 @@ const FarmerAssistant = () => {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Type your message..."
-                    onKeyPress={(e) => e.key === 'Enter' && handleSend(input)}
+                    onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend(input)}
                     disabled={isLoading}
                     className="border-accent/30 focus:border-accent"
                   />

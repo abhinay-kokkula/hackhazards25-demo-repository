@@ -5,7 +5,6 @@ import Hero from "@/components/Hero";
 import CategorySection from "@/components/CategorySection";
 import ProductCard from "@/components/ProductCard";
 import Footer from "@/components/Footer";
-import FarmerAssistant from "@/components/FarmerAssistant";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
@@ -182,25 +181,11 @@ const Index = () => {
       <Navbar />
       
       <main className="flex-1">
-        {!isMobile && (
-          <div className="fixed right-4 top-20 z-10 w-80 hidden lg:block">
-            <FarmerAssistant />
-          </div>
-        )}
-        
         <Hero />
         <CategorySection />
         
-        {isMobile && (
-          <section className="py-8 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
-            <div className="container mx-auto px-4">
-              <FarmerAssistant />
-            </div>
-          </section>
-        )}
-        
         <section className="py-16">
-          <div className="container mx-auto px-4 lg:pr-96">
+          <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold">{t('featuredProducts')}</h2>
               <Button 
@@ -227,7 +212,7 @@ const Index = () => {
         </section>
         
         <section className="py-16 bg-gradient-to-r from-primary/5 via-accent/10 to-background">
-          <div className="container mx-auto px-4 lg:pr-96">
+          <div className="container mx-auto px-4">
             <div className="max-w-5xl mx-auto">
               <div className="flex flex-col md:flex-row items-center gap-8">
                 <div className="md:w-1/2">
@@ -266,7 +251,7 @@ const Index = () => {
         </section>
         
         <section className="py-16">
-          <div className="container mx-auto px-4 lg:pr-96">
+          <div className="container mx-auto px-4">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-bold">{t('farmFreshProduce')}</h2>
               <Button 
@@ -293,7 +278,7 @@ const Index = () => {
         </section>
         
         <section className="py-20 bg-gradient-to-r from-primary to-accent">
-          <div className="container mx-auto px-4 text-center lg:pr-96">
+          <div className="container mx-auto px-4 text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t('readyToShare')}</h2>
             <p className="text-white/90 max-w-xl mx-auto mb-8">
               {t('joinCommunity')}
