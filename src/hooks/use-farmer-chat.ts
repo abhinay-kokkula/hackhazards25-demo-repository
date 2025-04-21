@@ -31,7 +31,7 @@ export const useFarmerChat = () => {
         console.error("Supabase function error:", error)
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "Connection Error",
           description: "Failed to connect to the assistant. Please try again later.",
         })
         
@@ -51,6 +51,11 @@ export const useFarmerChat = () => {
         console.error("API reported error:", data.error)
         if (data.error.includes('API key')) {
           responseContent = "The assistant is currently unavailable due to an API key issue. Please contact the administrator."
+          toast({
+            variant: "destructive",
+            title: "API Key Error",
+            description: "There's an issue with the Groq API key configuration.",
+          })
         } else {
           responseContent = data.choices && data.choices[0]?.message?.content 
             ? data.choices[0].message.content 
@@ -60,6 +65,11 @@ export const useFarmerChat = () => {
         responseContent = data.choices[0].message.content || responseContent
       } else {
         console.error("Unexpected response format:", data)
+        toast({
+          variant: "destructive",
+          title: "Response Error",
+          description: "Received an unexpected response format from the assistant.",
+        })
       }
 
       const assistantMessage: Message = { 
