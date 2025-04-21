@@ -64,7 +64,12 @@ const FarmerAssistant = () => {
 
       let responseContent = "I couldn't process that. Please try again."
       
-      if (data?.choices && data.choices.length > 0 && data.choices[0].message) {
+      if (data?.error) {
+        console.error("API reported error:", data.error)
+        responseContent = data.choices && data.choices[0]?.message?.content 
+          ? data.choices[0].message.content 
+          : "There was an issue with my connection. Please try again later."
+      } else if (data?.choices && data.choices.length > 0 && data.choices[0].message) {
         responseContent = data.choices[0].message.content || responseContent
       } else {
         console.error("Unexpected response format:", data)
