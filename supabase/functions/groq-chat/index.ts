@@ -8,6 +8,7 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -27,7 +28,7 @@ serve(async (req) => {
         error: 'API key not configured',
         choices: [{ message: { content: "I'm having trouble connecting to my knowledge base. Please contact the administrator about the API key." } }]
       }), {
-        status: 500,
+        status: 200, // Always return 200 to avoid Supabase error but include error info
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -69,37 +70,38 @@ serve(async (req) => {
         console.error(`Groq API error (${response.status}):`, errorText)
         
         return new Response(JSON.stringify({
-          error: `Groq API returned ${response.status}`,
+          error: `Groq API error: ${response.status}`,
           choices: [{ message: { content: "I'm having trouble connecting right now. Please try again later." } }]
         }), {
-          status: 200, // Return 200 to client but include error info
+          status: 200, // Always return 200 to prevent Supabase errors
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
 
       const data = await response.json()
-      console.log('Successfully received response from Groq API:', JSON.stringify(data).substring(0, 200) + '...')
+      console.log('Successfully received response from Groq API')
       
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       })
     } catch (fetchError) {
       console.error('Fetch error when calling Groq API:', fetchError)
       return new Response(JSON.stringify({
-        error: `Failed to connect to Groq API: ${fetchError.message}`,
+        error: `Fetch error: ${fetchError.message}`,
         choices: [{ message: { content: "I can't reach my knowledge base right now. Please check your internet connection and try again." } }]
       }), {
-        status: 200, // Return 200 to client but include error info
+        status: 200, // Always return 200 to prevent Supabase errors
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
   } catch (error) {
     console.error('General error:', error)
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: `General error: ${error.message}`,
       choices: [{ message: { content: "I'm having trouble processing your request. Please try again with a different question." } }] 
     }), {
-      status: 200, // Return 200 to client but include error info
+      status: 200, // Always return 200 to prevent Supabase errors
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }

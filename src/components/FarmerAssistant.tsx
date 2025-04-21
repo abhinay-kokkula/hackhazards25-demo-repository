@@ -57,7 +57,19 @@ const FarmerAssistant = () => {
 
       if (error) {
         console.error("Supabase function error:", error)
-        throw new Error(`API Error: ${error.message}`)
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to connect to the assistant. Please try again later.",
+        })
+        
+        // Add error message to the chat
+        const errorMessage: Message = { 
+          role: 'assistant', 
+          content: "I'm having trouble connecting right now. Please try again later." 
+        }
+        setMessages([...newMessages, errorMessage])
+        return
       }
 
       console.log("Received response from Groq API:", data)
@@ -66,9 +78,13 @@ const FarmerAssistant = () => {
       
       if (data?.error) {
         console.error("API reported error:", data.error)
-        responseContent = data.choices && data.choices[0]?.message?.content 
-          ? data.choices[0].message.content 
-          : "There was an issue with my connection. Please try again later."
+        if (data.error.includes('API key')) {
+          responseContent = "The assistant is currently unavailable due to an API key issue. Please contact the administrator."
+        } else {
+          responseContent = data.choices && data.choices[0]?.message?.content 
+            ? data.choices[0].message.content 
+            : "There was an issue with my connection. Please try again later."
+        }
       } else if (data?.choices && data.choices.length > 0 && data.choices[0].message) {
         responseContent = data.choices[0].message.content || responseContent
       } else {
@@ -105,7 +121,7 @@ const FarmerAssistant = () => {
     }
   }
   
-  // On non-home pages, only show the button without auto-opening the sheet
+  // On non-home pages, only show the button that redirects to home
   if (!isHomePage) {
     return (
       <div className="fixed bottom-4 right-4 z-50">
