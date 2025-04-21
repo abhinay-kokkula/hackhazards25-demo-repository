@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -10,28 +9,15 @@ import VoiceInput from "./VoiceInput"
 import { supabase } from "@/integrations/supabase/client"
 import { Send, Bot, Loader2, MessageCircle } from "lucide-react"
 import { useLocation } from "react-router-dom"
-
-type Message = {
-  content: string
-  role: 'user' | 'assistant'
-}
+import { useFarmerChat } from "@/hooks/use-farmer-chat"
+import ChatMessageList from "./farmer-assistant/ChatMessageList"
+import ChatInput from "./farmer-assistant/ChatInput"
 
 const FarmerAssistant = () => {
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
-  const { toast } = useToast()
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const isHomePage = location.pathname === "/"
-
-  // Auto-scroll to bottom when messages update
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
-    }
-  }, [messages])
+  const { messages, isLoading, sendMessage } = useFarmerChat()
 
   // Close sheet when navigating away from home page
   useEffect(() => {
@@ -39,87 +25,6 @@ const FarmerAssistant = () => {
       setIsOpen(false)
     }
   }, [isHomePage])
-
-  const handleSend = async (text: string) => {
-    if (!text.trim()) return
-
-    setIsLoading(true)
-    const newUserMessage: Message = { role: 'user', content: text }
-    const newMessages = [...messages, newUserMessage]
-    setMessages(newMessages)
-    setInput('')
-
-    try {
-      console.log("Sending request to Groq API with:", text.substring(0, 30) + "...")
-      const { data, error } = await supabase.functions.invoke('groq-chat', {
-        body: { prompt: text, language: 'en' }
-      })
-
-      if (error) {
-        console.error("Supabase function error:", error)
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to connect to the assistant. Please try again later.",
-        })
-        
-        // Add error message to the chat
-        const errorMessage: Message = { 
-          role: 'assistant', 
-          content: "I'm having trouble connecting right now. Please try again later." 
-        }
-        setMessages([...newMessages, errorMessage])
-        return
-      }
-
-      console.log("Received response from Groq API:", data)
-
-      let responseContent = "I couldn't process that. Please try again."
-      
-      if (data?.error) {
-        console.error("API reported error:", data.error)
-        if (data.error.includes('API key')) {
-          responseContent = "The assistant is currently unavailable due to an API key issue. Please contact the administrator."
-        } else {
-          responseContent = data.choices && data.choices[0]?.message?.content 
-            ? data.choices[0].message.content 
-            : "There was an issue with my connection. Please try again later."
-        }
-      } else if (data?.choices && data.choices.length > 0 && data.choices[0].message) {
-        responseContent = data.choices[0].message.content || responseContent
-      } else {
-        console.error("Unexpected response format:", data)
-      }
-
-      const assistantMessage: Message = { 
-        role: 'assistant', 
-        content: responseContent
-      }
-      setMessages([...newMessages, assistantMessage])
-    } catch (error) {
-      console.error('Error:', error)
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to get a response. Please try again.",
-      })
-      // Add error message to the chat
-      const errorMessage: Message = { 
-        role: 'assistant', 
-        content: "I'm having trouble connecting right now. Please try again later." 
-      }
-      setMessages([...newMessages, errorMessage])
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleVoiceInput = (transcription: string) => {
-    setInput(transcription)
-    if (transcription.trim()) {
-      handleSend(transcription)
-    }
-  }
   
   // On non-home pages, only show the button that redirects to home
   if (!isHomePage) {
@@ -133,7 +38,7 @@ const FarmerAssistant = () => {
           <MessageCircle className="h-6 w-6" />
         </Button>
       </div>
-    );
+    )
   }
 
   return (
@@ -157,66 +62,8 @@ const FarmerAssistant = () => {
             </CardHeader>
             <CardContent className="p-0">
               <div className="p-4 h-full flex flex-col">
-                <ScrollArea className="flex-1 h-[calc(100vh-220px)] pr-4 mb-4" ref={scrollAreaRef}>
-                  {messages.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
-                      <Bot className="h-8 w-8 mb-2 opacity-40" />
-                      <p>Ask me about crop prices, market trends, or any farming questions you have.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {messages.map((message, index) => (
-                        <div
-                          key={index}
-                          className={`flex ${
-                            message.role === 'user' ? 'justify-end' : 'justify-start'
-                          }`}
-                        >
-                          <div
-                            className={`rounded-lg px-3 py-2 max-w-[80%] ${
-                              message.role === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted'
-                            }`}
-                          >
-                            {message.content}
-                          </div>
-                        </div>
-                      ))}
-                      {isLoading && (
-                        <div className="flex justify-start">
-                          <div className="bg-muted rounded-lg px-3 py-2 flex items-center space-x-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Thinking...</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </ScrollArea>
-                
-                <div className="flex items-center space-x-2 mt-auto pt-2">
-                  <Input
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type your message..."
-                    onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSend(input)}
-                    disabled={isLoading}
-                    className="border-accent/30 focus:border-accent"
-                  />
-                  <VoiceInput onTranscription={handleVoiceInput} />
-                  <Button 
-                    onClick={() => handleSend(input)}
-                    disabled={!input.trim() || isLoading}
-                    className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
+                <ChatMessageList messages={messages} isLoading={isLoading} />
+                <ChatInput onSend={sendMessage} isLoading={isLoading} />
               </div>
             </CardContent>
           </Card>
