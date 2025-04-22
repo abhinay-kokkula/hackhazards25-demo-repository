@@ -10,12 +10,14 @@ interface ChatMessageListProps {
 }
 
 const ChatMessageList = ({ messages, isLoading }: ChatMessageListProps) => {
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
-    }
+    scrollToBottom()
   }, [messages])
 
   if (messages.length === 0) {
@@ -28,7 +30,7 @@ const ChatMessageList = ({ messages, isLoading }: ChatMessageListProps) => {
   }
 
   return (
-    <ScrollArea className="flex-1 h-[calc(100vh-220px)] pr-4 mb-4" ref={scrollAreaRef}>
+    <ScrollArea className="flex-1 h-[calc(100vh-220px)] pr-4 mb-4">
       <div className="space-y-4">
         {messages.map((message, index) => (
           <div
@@ -56,6 +58,7 @@ const ChatMessageList = ({ messages, isLoading }: ChatMessageListProps) => {
             </div>
           </div>
         )}
+        <div ref={messagesEndRef} />
       </div>
     </ScrollArea>
   )

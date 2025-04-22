@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Loader2, Send } from "lucide-react"
 import VoiceInput from "../VoiceInput"
+import { useToast } from "@/hooks/use-toast"
 
 interface ChatInputProps {
   onSend: (text: string) => void
@@ -12,6 +13,7 @@ interface ChatInputProps {
 
 const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
   const [input, setInput] = useState('')
+  const { toast } = useToast()
 
   const handleSend = () => {
     if (input.trim() && !isLoading) {
@@ -27,6 +29,18 @@ const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
     }
   }
 
+  const handleVoiceInput = (text: string) => {
+    setInput(text)
+    if (text.trim()) {
+      toast({
+        title: "Voice detected",
+        description: "Converting your message...",
+        duration: 2000,
+      })
+      onSend(text)
+    }
+  }
+
   return (
     <div className="flex items-center space-x-2 mt-auto pt-2">
       <Input
@@ -38,12 +52,9 @@ const ChatInput = ({ onSend, isLoading }: ChatInputProps) => {
         className="border-accent/30 focus:border-accent"
         aria-label="Chat message"
       />
-      <VoiceInput onTranscription={(text) => {
-        setInput(text)
-        if (text.trim()) {
-          onSend(text)
-        }
-      }} />
+      <VoiceInput 
+        onTranscription={handleVoiceInput}
+      />
       <Button 
         onClick={handleSend}
         disabled={!input.trim() || isLoading}
